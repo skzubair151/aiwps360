@@ -7,6 +7,7 @@
         <button data-target="iv-assembly">🔧 Assembly</button>
         <button data-target="iv-packing">📦 Packing</button>
         <button data-target="iv-sealing">🔒 Sealing</button>
+        <button data-target="iv-tube">📦 Tube Inventory</button>
     </div>
 
     <div class="dept-content">
@@ -198,4 +199,73 @@
 })();
 </script>
 
-{% endblock %}
+
+<!-- Tube Inventory Panel -->
+<div class="dept-panel" id="iv-tube">
+    <div class="card">
+        <h3>📦 Add Tube Inventory (Bags/Cartons)</h3>
+        <form method="post" action="/iv_set/add_tube">
+            <label>Supplier Name</label>
+            <input type="text" name="supplier_name" required>
+            
+            <label>Invoice Number</label>
+            <input type="text" name="invoice_number" required>
+            
+            <div style="display:flex; gap:15px;">
+                <div style="flex:1;">
+                    <label>Bag Quantity</label>
+                    <input type="number" name="bag_quantity" value="0">
+                </div>
+                <div style="flex:1;">
+                    <label>PCS per Bag</label>
+                    <input type="number" name="pcs_per_bag" value="100">
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:15px;">
+                <div style="flex:1;">
+                    <label>Carton Quantity</label>
+                    <input type="number" name="carton_quantity" value="0">
+                </div>
+                <div style="flex:1;">
+                    <label>PCS per Carton</label>
+                    <input type="number" name="pcs_per_carton" value="500">
+                </div>
+            </div>
+            
+            <label>Received By</label>
+            <input type="text" name="received_by" required>
+            
+            <button type="submit">Add Tube Inventory</button>
+        </form>
+    </div>
+    <div class="card">
+        <h3>📜 Tube Inventory History</h3>
+        <table>
+            <tr>
+                <th>Date</th>
+                <th>Supplier</th>
+                <th>Invoice</th>
+                <th>Bags</th>
+                <th>PCS/Bag</th>
+                <th>Cartons</th>
+                <th>PCS/Carton</th>
+                <th>Total PCS</th>
+                <th>Received By</th>
+            </tr>
+            {% for t in tube_inventory %}
+            <tr>
+                <td>{{ t[1] }}</td>
+                <td>{{ t[2] }}</td>
+                <td>{{ t[3] }}</td>
+                <td>{{ t[4] }}</td>
+                <td>{{ t[5] }}</td>
+                <td>{{ t[7] }}</td>
+                <td>{{ t[8] }}</td>
+                <td>{{ t[6] }}</td>
+                <td>{{ t[9] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>

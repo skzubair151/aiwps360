@@ -915,3 +915,23 @@ def settings_restore():
 # ============================================
 if __name__ == '__main__':
     app.run(debug=True)
+
+    # ============================================
+# IV SET - TUBE INVENTORY ROUTES
+# ============================================
+@app.route('/iv_set/add_tube', methods=['POST'])
+def add_tube_inventory():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    supplier_name = request.form.get('supplier_name', '')
+    invoice_number = request.form.get('invoice_number', '')
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    pcs_per_bag = int(request.form.get('pcs_per_bag', 100))
+    carton_quantity = int(request.form.get('carton_quantity', 0))
+    pcs_per_carton = int(request.form.get('pcs_per_carton', 500))
+    received_by = request.form.get('received_by', '')
+    
+    success, message = manager.add_tube_inventory(supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('iv_set'))

@@ -1,4 +1,4 @@
-# PART 1: DATABASE LAYER (COMPLETE - WITH USERS + SALES + IV SET)
+# PART 1: DATABASE LAYER (COMPLETE - WITH USERS + SALES + IV SET + TUBE TRACKING)
 import sqlite3
 from datetime import datetime
 import hashlib
@@ -403,6 +403,25 @@ class Database:
             CREATE TABLE IF NOT EXISTS batch_counter (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 last_number INTEGER DEFAULT 0
+            )
+        ''')
+        
+        # ============================================
+        # TUBE TRACKING TABLE (Bags/Cartons)
+        # ============================================
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS tube_inventory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_date TEXT NOT NULL,
+                supplier_name TEXT NOT NULL,
+                invoice_number TEXT NOT NULL,
+                bag_quantity INTEGER NOT NULL,
+                pcs_per_bag INTEGER DEFAULT 100,
+                total_pcs INTEGER NOT NULL,
+                carton_quantity INTEGER DEFAULT 0,
+                pcs_per_carton INTEGER DEFAULT 500,
+                received_by TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
@@ -1398,6 +1417,35 @@ class Database:
         conn.commit()
         conn.close()
         return True
+
+    # ============================================
+    # TUBE INVENTORY (Bags/Cartons)
+    # ============================================
+    def add_tube_inventory(self, supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by):
+        entry_date = datetime.now().strftime("%Y-%m-%d")
+        total_pcs = (bag_quantity * pcs_per_bag) + (carton_quantity * pcs_per_carton)
+        
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO tube_inventory (entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by)
+        )
+        cursor.execute(
+            "UPDATE warehouse_stock SET quantity = quantity + ? WHERE item_name = 'Tub'",
+            (total_pcs,)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_tube_inventory(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by FROM tube_inventory ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
 
     # ============================================
     # DELETE RECORDS
