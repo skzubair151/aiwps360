@@ -1,4 +1,4 @@
-# PART 1: DATABASE LAYER (COMPLETE - WITH USERS + SALES + IV SET + TUBE TRACKING)
+# PART 1: DATABASE LAYER (COMPLETE - WITH USERS + SALES + IV SET + TUBE TRACKING + BAG SEALING)
 import sqlite3
 from datetime import datetime
 import hashlib
@@ -389,8 +389,10 @@ class Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 seal_date TEXT NOT NULL,
                 lot_number TEXT NOT NULL,
-                multi_pack_qty INTEGER NOT NULL,
-                sets_per_pack INTEGER DEFAULT 50,
+                bag_quantity INTEGER NOT NULL,
+                multi_packs_per_bag INTEGER DEFAULT 6,
+                total_multi_packs INTEGER NOT NULL,
+                sets_per_multi_pack INTEGER DEFAULT 50,
                 total_sets INTEGER NOT NULL,
                 sealer_name TEXT NOT NULL,
                 status TEXT DEFAULT 'Completed',
@@ -1363,16 +1365,16 @@ class Database:
         conn.close()
         return results
 
-    def add_iv_set_sealing(self, seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name):
+    def add_iv_set_sealing(self, seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO iv_set_sealing (seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name) VALUES (?, ?, ?, ?, ?, ?)",
-            (seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name)
+            "INSERT INTO iv_set_sealing (seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name)
         )
         cursor.execute(
             "UPDATE warehouse_stock SET quantity = quantity - ? WHERE item_name = 'Multi Pack Poly'",
-            (multi_pack_qty,)
+            (total_multi_packs,)
         )
         conn.commit()
         conn.close()
@@ -1381,7 +1383,7 @@ class Database:
     def get_iv_set_sealing_records(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name, status FROM iv_set_sealing ORDER BY timestamp DESC")
+        cursor.execute("SELECT id, seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name, status FROM iv_set_sealing ORDER BY timestamp DESC")
         results = cursor.fetchall()
         conn.close()
         return results
@@ -1537,33 +1539,3 @@ class Database:
         conn.commit()
         conn.close()
         return True
-    # ============================================
-# IV SET - SEALING (Updated with Bags)
-# ============================================
-def add_iv_set_sealing(self, seal_date, lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name):
-    """Add sealing record with bag tracking"""
-    total_multi_packs = bag_quantity * multi_packs_per_bag
-    total_sets = total_multi_packs * sets_per_multi_pack
-    
-    conn = sqlite3.connect(self.db_name)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO iv_set_sealing (seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name)
-    )
-    # Deduct Multi Pack Poly
-    cursor.execute(
-        "UPDATE warehouse_stock SET quantity = quantity - ? WHERE item_name = 'Multi Pack Poly'",
-        (total_multi_packs,)
-    )
-    conn.commit()
-    conn.close()
-    return True
-
-def get_iv_set_sealing_records(self):
-    conn = sqlite3.connect(self.db_name)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name, status FROM iv_set_sealing ORDER BY timestamp DESC")
-    results = cursor.fetchall()
-    conn.close()
-    return results

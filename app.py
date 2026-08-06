@@ -714,6 +714,7 @@ def iv_set():
     sealing_records = manager.get_iv_set_sealing_records()
     pending_batches = manager.get_pending_batches_for_packing()
     pending_lots = manager.get_pending_lots_for_sealing()
+    tube_inventory = manager.get_tube_inventory()
     
     return render_template(
         'iv_set.html',
@@ -723,7 +724,8 @@ def iv_set():
         packing_records=packing_records,
         sealing_records=sealing_records,
         pending_batches=pending_batches,
-        pending_lots=pending_lots
+        pending_lots=pending_lots,
+        tube_inventory=tube_inventory
     )
 
 @app.route('/iv_set/assemble', methods=['POST'])
@@ -756,10 +758,29 @@ def iv_set_seal():
         return redirect(url_for('login'))
     
     lot_number = request.form.get('lot_number', '')
-    sets_per_pack = int(request.form.get('sets_per_pack', 50))
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    multi_packs_per_bag = int(request.form.get('multi_packs_per_bag', 6))
+    sets_per_multi_pack = int(request.form.get('sets_per_multi_pack', 50))
     sealer_name = request.form.get('sealer_name', '')
     
-    success, message = manager.seal_iv_sets(lot_number, sets_per_pack, sealer_name)
+    success, message = manager.seal_iv_sets(lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('iv_set'))
+
+@app.route('/iv_set/add_tube', methods=['POST'])
+def add_tube_inventory():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    supplier_name = request.form.get('supplier_name', '')
+    invoice_number = request.form.get('invoice_number', '')
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    pcs_per_bag = int(request.form.get('pcs_per_bag', 100))
+    carton_quantity = int(request.form.get('carton_quantity', 0))
+    pcs_per_carton = int(request.form.get('pcs_per_carton', 500))
+    received_by = request.form.get('received_by', '')
+    
+    success, message = manager.add_tube_inventory(supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by)
     flash(message, 'success' if success else 'error')
     return redirect(url_for('iv_set'))
 
@@ -915,37 +936,3 @@ def settings_restore():
 # ============================================
 if __name__ == '__main__':
     app.run(debug=True)
-
-    # ============================================
-# IV SET - TUBE INVENTORY ROUTES
-# ============================================
-@app.route('/iv_set/add_tube', methods=['POST'])
-def add_tube_inventory():
-    if login_required():
-        return redirect(url_for('login'))
-    
-    supplier_name = request.form.get('supplier_name', '')
-    invoice_number = request.form.get('invoice_number', '')
-    bag_quantity = int(request.form.get('bag_quantity', 0))
-    pcs_per_bag = int(request.form.get('pcs_per_bag', 100))
-    carton_quantity = int(request.form.get('carton_quantity', 0))
-    pcs_per_carton = int(request.form.get('pcs_per_carton', 500))
-    received_by = request.form.get('received_by', '')
-    
-    success, message = manager.add_tube_inventory(supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by)
-    flash(message, 'success' if success else 'error')
-    return redirect(url_for('iv_set'))
-@app.route('/iv_set/seal', methods=['POST'])
-def iv_set_seal():
-    if login_required():
-        return redirect(url_for('login'))
-    
-    lot_number = request.form.get('lot_number', '')
-    bag_quantity = int(request.form.get('bag_quantity', 0))
-    multi_packs_per_bag = int(request.form.get('multi_packs_per_bag', 6))
-    sets_per_multi_pack = int(request.form.get('sets_per_multi_pack', 50))
-    sealer_name = request.form.get('sealer_name', '')
-    
-    success, message = manager.seal_iv_sets(lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name)
-    flash(message, 'success' if success else 'error')
-    return redirect(url_for('iv_set'))

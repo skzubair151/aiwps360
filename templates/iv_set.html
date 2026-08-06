@@ -7,7 +7,7 @@
         <button data-target="iv-assembly">🔧 Assembly</button>
         <button data-target="iv-packing">📦 Packing</button>
         <button data-target="iv-sealing">🔒 Sealing</button>
-        <button data-target="iv-tube">📦 Tube Inventory</button>
+        <button data-target="iv-tube">📥 Tube Inventory</button>
     </div>
 
     <div class="dept-content">
@@ -130,8 +130,12 @@
         <div class="dept-panel" id="iv-sealing">
             <div class="card">
                 <h3>🔒 Seal IV Sets (Multi Pack)</h3>
-                <p style="color:#555; margin-bottom:12px;">50 Packed IV Sets = 1 Multi Pack Poly</p>
-                <form method="post" action="/iv_set/seal">
+                <p style="color:#555; margin-bottom:12px;">
+                    <strong>1 Bag = 6 Multi Packs</strong><br>
+                    <strong>1 Multi Pack = 50 IV Sets</strong><br>
+                    <strong>1 Bag = 300 IV Sets</strong>
+                </p>
+                <form method="post" action="/iv_set/seal" id="seal-form">
                     <label>Select LOT to Seal</label>
                     <select name="lot_number" required>
                         <option value="">-- Select Pending LOT --</option>
@@ -139,10 +143,32 @@
                         <option value="{{ l[0] }}">{{ l[0] }} ({{ l[1] }} sets)</option>
                         {% endfor %}
                     </select>
-                    <label>Sets per Multi Pack</label>
-                    <input type="number" name="sets_per_pack" value="50" required>
+                    
+                    <label>Bag Quantity</label>
+                    <input type="number" name="bag_quantity" id="bag_quantity" value="1" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                    
+                    <div style="display:flex; gap:15px;">
+                        <div style="flex:1;">
+                            <label>Multi Packs per Bag</label>
+                            <input type="number" name="multi_packs_per_bag" id="multi_packs_per_bag" value="6" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                        </div>
+                        <div style="flex:1;">
+                            <label>Sets per Multi Pack</label>
+                            <input type="number" name="sets_per_multi_pack" id="sets_per_multi_pack" value="50" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                        </div>
+                    </div>
+                    
+                    <div style="background:#f5f5f5; padding:12px; border-radius:4px; margin:8px 0;">
+                        <div style="display:flex; gap:20px; justify-content:space-around;">
+                            <div><strong>Bags:</strong> <span id="display_bags">1</span></div>
+                            <div><strong>Multi Packs:</strong> <span id="display_multi_packs">6</span></div>
+                            <div><strong>Total PCS:</strong> <span id="display_pcs">300</span></div>
+                        </div>
+                    </div>
+                    
                     <label>Sealer Name</label>
                     <input type="text" name="sealer_name" required>
+                    
                     <button type="submit">Seal & Create Multi Packs</button>
                 </form>
                 <p style="color:#555; margin-top:8px; font-size:12px;">⚠️ This will automatically deduct Multi Pack Poly from warehouse stock.</p>
@@ -153,9 +179,11 @@
                     <tr>
                         <th>Date</th>
                         <th>LOT</th>
-                        <th>Multi Packs</th>
+                        <th>Bags</th>
+                        <th>Multi Packs/Bag</th>
+                        <th>Total Multi Packs</th>
                         <th>Sets/Pack</th>
-                        <th>Total Sets</th>
+                        <th>Total PCS</th>
                         <th>Sealer</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -169,6 +197,8 @@
                         <td>{{ s[5] }}</td>
                         <td>{{ s[6] }}</td>
                         <td>{{ s[7] }}</td>
+                        <td>{{ s[8] }}</td>
+                        <td>{{ s[9] }}</td>
                         <td>
                             <form method="post" action="/iv_set/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
                                 <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
@@ -180,178 +210,82 @@
             </div>
         </div>
 
+        <!-- Tube Inventory Panel -->
+        <div class="dept-panel" id="iv-tube">
+            <div class="card">
+                <h3>📥 Add Tube Inventory (Bags/Cartons)</h3>
+                <p style="color:#555; margin-bottom:12px;">Tube comes in Bags (100 PCS per bag) and Cartons (500 PCS per carton)</p>
+                <form method="post" action="/iv_set/add_tube">
+                    <label>Supplier Name</label>
+                    <input type="text" name="supplier_name" required>
+                    
+                    <label>Invoice Number</label>
+                    <input type="text" name="invoice_number" required>
+                    
+                    <div style="display:flex; gap:15px;">
+                        <div style="flex:1;">
+                            <label>Bag Quantity</label>
+                            <input type="number" name="bag_quantity" value="0" min="0">
+                        </div>
+                        <div style="flex:1;">
+                            <label>PCS per Bag</label>
+                            <input type="number" name="pcs_per_bag" value="100" min="1">
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex; gap:15px;">
+                        <div style="flex:1;">
+                            <label>Carton Quantity</label>
+                            <input type="number" name="carton_quantity" value="0" min="0">
+                        </div>
+                        <div style="flex:1;">
+                            <label>PCS per Carton</label>
+                            <input type="number" name="pcs_per_carton" value="500" min="1">
+                        </div>
+                    </div>
+                    
+                    <label>Received By</label>
+                    <input type="text" name="received_by" required>
+                    
+                    <button type="submit">Add Tube Inventory</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>📜 Tube Inventory History</h3>
+                <table>
+                    <tr>
+                        <th>Date</th>
+                        <th>Supplier</th>
+                        <th>Invoice</th>
+                        <th>Bags</th>
+                        <th>PCS/Bag</th>
+                        <th>Cartons</th>
+                        <th>PCS/Carton</th>
+                        <th>Total PCS</th>
+                        <th>Received By</th>
+                    </tr>
+                    {% for t in tube_inventory %}
+                    <tr>
+                        <td>{{ t[1] }}</td>
+                        <td>{{ t[2] }}</td>
+                        <td>{{ t[3] }}</td>
+                        <td>{{ t[4] }}</td>
+                        <td>{{ t[5] }}</td>
+                        <td>{{ t[7] }}</td>
+                        <td>{{ t[8] }}</td>
+                        <td>{{ t[6] }}</td>
+                        <td>{{ t[9] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script>
-(function() {
-    var sidebar = document.getElementById('iv-sidebar');
-    var buttons = sidebar.querySelectorAll('button');
-    var panels = document.querySelectorAll('.dept-panel');
-    buttons.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            buttons.forEach(function(b) { b.classList.remove('active'); });
-            panels.forEach(function(p) { p.classList.remove('active'); });
-            btn.classList.add('active');
-            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
-        });
-    });
-})();
-</script>
-
-
-<!-- Tube Inventory Panel -->
-<div class="dept-panel" id="iv-tube">
-    <div class="card">
-        <h3>📦 Add Tube Inventory (Bags/Cartons)</h3>
-        <form method="post" action="/iv_set/add_tube">
-            <label>Supplier Name</label>
-            <input type="text" name="supplier_name" required>
-            
-            <label>Invoice Number</label>
-            <input type="text" name="invoice_number" required>
-            
-            <div style="display:flex; gap:15px;">
-                <div style="flex:1;">
-                    <label>Bag Quantity</label>
-                    <input type="number" name="bag_quantity" value="0">
-                </div>
-                <div style="flex:1;">
-                    <label>PCS per Bag</label>
-                    <input type="number" name="pcs_per_bag" value="100">
-                </div>
-            </div>
-            
-            <div style="display:flex; gap:15px;">
-                <div style="flex:1;">
-                    <label>Carton Quantity</label>
-                    <input type="number" name="carton_quantity" value="0">
-                </div>
-                <div style="flex:1;">
-                    <label>PCS per Carton</label>
-                    <input type="number" name="pcs_per_carton" value="500">
-                </div>
-            </div>
-            
-            <label>Received By</label>
-            <input type="text" name="received_by" required>
-            
-            <button type="submit">Add Tube Inventory</button>
-        </form>
-    </div>
-    <div class="card">
-        <h3>📜 Tube Inventory History</h3>
-        <table>
-            <tr>
-                <th>Date</th>
-                <th>Supplier</th>
-                <th>Invoice</th>
-                <th>Bags</th>
-                <th>PCS/Bag</th>
-                <th>Cartons</th>
-                <th>PCS/Carton</th>
-                <th>Total PCS</th>
-                <th>Received By</th>
-            </tr>
-            {% for t in tube_inventory %}
-            <tr>
-                <td>{{ t[1] }}</td>
-                <td>{{ t[2] }}</td>
-                <td>{{ t[3] }}</td>
-                <td>{{ t[4] }}</td>
-                <td>{{ t[5] }}</td>
-                <td>{{ t[7] }}</td>
-                <td>{{ t[8] }}</td>
-                <td>{{ t[6] }}</td>
-                <td>{{ t[9] }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
-<!-- Sealing Panel -->
-<div class="dept-panel" id="iv-sealing">
-    <div class="card">
-        <h3>🔒 Seal IV Sets (Multi Pack)</h3>
-        <p style="color:#555; margin-bottom:12px;">
-            <strong>1 Bag = {{ multi_packs_per_bag }} Multi Packs</strong><br>
-            <strong>1 Multi Pack = {{ sets_per_multi_pack }} IV Sets</strong>
-        </p>
-        <form method="post" action="/iv_set/seal" id="seal-form">
-            <label>Select LOT to Seal</label>
-            <select name="lot_number" required>
-                <option value="">-- Select Pending LOT --</option>
-                {% for l in pending_lots %}
-                <option value="{{ l[0] }}">{{ l[0] }} ({{ l[1] }} sets)</option>
-                {% endfor %}
-            </select>
-            
-            <label>Bag Quantity</label>
-            <input type="number" name="bag_quantity" id="bag_quantity" value="1" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
-            
-            <div style="display:flex; gap:15px;">
-                <div style="flex:1;">
-                    <label>Multi Packs per Bag</label>
-                    <input type="number" name="multi_packs_per_bag" id="multi_packs_per_bag" value="6" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
-                </div>
-                <div style="flex:1;">
-                    <label>Sets per Multi Pack</label>
-                    <input type="number" name="sets_per_multi_pack" id="sets_per_multi_pack" value="50" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
-                </div>
-            </div>
-            
-            <div style="background:#f5f5f5; padding:12px; border-radius:4px; margin:8px 0;">
-                <div style="display:flex; gap:20px; justify-content:space-around;">
-                    <div><strong>Bags:</strong> <span id="display_bags">1</span></div>
-                    <div><strong>Multi Packs:</strong> <span id="display_multi_packs">6</span></div>
-                    <div><strong>Total PCS:</strong> <span id="display_pcs">300</span></div>
-                </div>
-            </div>
-            
-            <label>Sealer Name</label>
-            <input type="text" name="sealer_name" required>
-            
-            <button type="submit">Seal & Create Multi Packs</button>
-        </form>
-        <p style="color:#555; margin-top:8px; font-size:12px;">⚠️ This will automatically deduct Multi Pack Poly from warehouse stock.</p>
-    </div>
-    <div class="card">
-        <h3>📜 Sealing History</h3>
-        <table>
-            <tr>
-                <th>Date</th>
-                <th>LOT</th>
-                <th>Bags</th>
-                <th>Multi Packs/Bag</th>
-                <th>Total Multi Packs</th>
-                <th>Sets/Pack</th>
-                <th>Total PCS</th>
-                <th>Sealer</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-            {% for s in sealing_records %}
-            <tr>
-                <td>{{ s[1] }}</td>
-                <td>{{ s[2] }}</td>
-                <td>{{ s[3] }}</td>
-                <td>{{ s[4] }}</td>
-                <td>{{ s[5] }}</td>
-                <td>{{ s[6] }}</td>
-                <td>{{ s[7] }}</td>
-                <td>{{ s[8] }}</td>
-                <td>{{ s[9] }}</td>
-                <td>
-                    <form method="post" action="/iv_set/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
-                        <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
-<script>
+// Calculate sealing values
 function calculateSealing() {
     var bags = parseInt(document.getElementById('bag_quantity').value) || 0;
     var multiPerBag = parseInt(document.getElementById('multi_packs_per_bag').value) || 0;
@@ -365,8 +299,25 @@ function calculateSealing() {
     document.getElementById('display_pcs').textContent = totalPcs;
 }
 
+// Sidebar tabs
+(function() {
+    var sidebar = document.getElementById('iv-sidebar');
+    var buttons = sidebar.querySelectorAll('button');
+    var panels = document.querySelectorAll('.dept-panel');
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+        });
+    });
+})();
+
 // Calculate on page load
 document.addEventListener('DOMContentLoaded', function() {
     calculateSealing();
 });
 </script>
+
+{% endblock %}

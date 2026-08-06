@@ -1,4 +1,4 @@
-# PART 2: BUSINESS LOGIC LAYER (COMPLETE - WITH SALES + IV SET)
+# PART 2: BUSINESS LOGIC LAYER (COMPLETE - WITH SALES + IV SET + BAG TRACKING)
 from database import Database
 from datetime import datetime, timedelta
 
@@ -492,16 +492,21 @@ class ProductionManager:
         return self.db.get_pending_batches_for_packing()
 
     # ============================================
-    # IV SET - SEALING (Multi Pack)
+    # IV SET - SEALING (Updated with Bags)
     # ============================================
-    def seal_iv_sets(self, lot_number, sets_per_pack, sealer_name):
+    def seal_iv_sets(self, lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name):
         if not lot_number:
             return False, "LOT number cannot be empty"
-        if sets_per_pack <= 0:
-            return False, "Sets per pack must be greater than 0"
+        if bag_quantity <= 0:
+            return False, "Bag quantity must be greater than 0"
+        if multi_packs_per_bag <= 0:
+            return False, "Multi packs per bag must be greater than 0"
+        if sets_per_multi_pack <= 0:
+            return False, "Sets per multi pack must be greater than 0"
         if not sealer_name or sealer_name.strip() == '':
             return False, "Sealer name cannot be empty"
         
+        # Get packing details
         records = self.db.get_iv_set_packing_records()
         pack_record = None
         for r in records:
@@ -512,17 +517,19 @@ class ProductionManager:
         if not pack_record:
             return False, f"❌ LOT {lot_number} not found!"
         
-        total_sets = pack_record[3]
-        multi_pack_qty = (total_sets + sets_per_pack - 1) // sets_per_pack
+        total_multi_packs = bag_quantity * multi_packs_per_bag
+        total_sets = total_multi_packs * sets_per_multi_pack
         
+        # Check Multi Pack Poly stock
         available, unit = self.db.get_item_quantity('Multi Pack Poly')
-        if available < multi_pack_qty:
-            return False, f"❌ Not enough Multi Pack Poly! Available: {available}, Required: {multi_pack_qty}"
+        if available < total_multi_packs:
+            return False, f"❌ Not enough Multi Pack Poly! Available: {available}, Required: {total_multi_packs}"
         
         seal_date = datetime.now().strftime("%Y-%m-%d")
-        self.db.add_iv_set_sealing(seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name)
+        self.db.add_iv_set_sealing(seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name)
         self.db.update_packing_status(lot_number, 'Sealed')
-        return True, f"✅ {multi_pack_qty} Multi Packs created from LOT {lot_number} ({total_sets} IV Sets)"
+        
+        return True, f"✅ {bag_quantity} Bags ({total_multi_packs} Multi Packs = {total_sets} PCS) sealed from LOT {lot_number}"
 
     def get_iv_set_sealing_records(self):
         return self.db.get_iv_set_sealing_records()
@@ -530,6 +537,18 @@ class ProductionManager:
     def get_pending_lots_for_sealing(self):
         return self.db.get_pending_lots_for_sealing()
 
+    # ============================================
+    # IV SET - TUBE INVENTORY
+    # ============================================
+    def add_tube_inventory(self, supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by):
+        return self.db.add_tube_inventory(supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by)
+
+    def get_tube_inventory(self):
+        return self.db.get_tube_inventory()
+
+    # ============================================
+    # IV SET - DELETE METHODS
+    # ============================================
     def delete_iv_set_assembly(self, record_id):
         return self.db.delete_iv_set_assembly(record_id)
 
@@ -565,189 +584,3 @@ class ProductionManager:
     
     def delete_packing_after_sterile(self, record_id):
         return self.db.delete_packing_after_sterile(record_id)
-
-    # ============================================
-# IV SET - TUBE INVENTORY (Bags/Cartons)
-# ============================================
-def add_tube_inventory(self, supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by):
-    """Add tube inventory with bag and carton tracking"""
-    total_pcs = (bag_quantity * pcs_per_bag) + (carton_quantity * pcs_per_carton)
-    entry_date = datetime.now().strftime("%Y-%m-%d")
-    
-    conn = sqlite3.connect(self.db_name)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO tube_inventory (entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by)
-    )
-    # Update warehouse stock for Tub
-    cursor.execute(
-        "UPDATE warehouse_stock SET quantity = quantity + ? WHERE item_name = 'Tub'",
-        (total_pcs,)
-    )
-    conn.commit()
-    conn.close()
-    return True, f"✅ {bag_quantity} Bags ({bag_quantity * pcs_per_bag} PCS) + {carton_quantity} Cartons ({carton_quantity * pcs_per_carton} PCS) of Tube added"
-
-def get_tube_inventory(self):
-    conn = sqlite3.connect(self.db_name)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by FROM tube_inventory ORDER BY timestamp DESC")
-    results = cursor.fetchall()
-    conn.close()
-    return results
-
-# ============================================
-# IV SET - ASSEMBLY (Updated with stock check)
-# ============================================
-def assemble_iv_sets(self, quantity, assembler_name):
-    if quantity <= 0:
-        return False, "Quantity must be greater than 0"
-    if not assembler_name or assembler_name.strip() == '':
-        return False, "Assembler name cannot be empty"
-    
-    # Check stock for all components
-    components = ['Chamber', 'Needle 35mm', 'Roller', 'Latex', 'Tub']
-    shortages = []
-    stock_data = {}
-    
-    for comp in components:
-        available, unit = self.db.get_item_quantity(comp)
-        stock_data[comp] = available
-        if available < quantity:
-            shortages.append(f"{comp}: {available} available, {quantity} required")
-    
-    if shortages:
-        return False, f"❌ Not enough components! Shortages: {', '.join(shortages)}"
-    
-    # Deduct all components
-    for comp in components:
-        self.db.deduct_warehouse_stock(comp, quantity)
-    
-    # Create batch
-    batch_number = self.db.get_next_batch_number()
-    assembly_date = datetime.now().strftime("%Y-%m-%d")
-    
-    self.db.add_iv_set_assembly(
-        assembly_date, batch_number, quantity,
-        quantity, quantity, quantity, quantity, quantity,
-        assembler_name
-    )
-    return True, f"✅ Batch {batch_number}: {quantity} IV Sets assembled by {assembler_name}"
-
-# ============================================
-# IV SET - PACKING (Updated with stock check)
-# ============================================
-def pack_iv_sets(self, batch_number, packer_name):
-    if not batch_number:
-        return False, "Batch number cannot be empty"
-    if not packer_name or packer_name.strip() == '':
-        return False, "Packer name cannot be empty"
-    
-    records = self.db.get_iv_set_assembly_records()
-    batch = None
-    for r in records:
-        if r[2] == batch_number:
-            batch = r
-            break
-    
-    if not batch:
-        return False, f"❌ Batch {batch_number} not found!"
-    if batch[5] != 'Pending':
-        return False, f"❌ Batch {batch_number} already packed!"
-    
-    total_sets = batch[3]
-    
-    # Check Single Pack Poly stock
-    available, unit = self.db.get_item_quantity('Single Pack Poly')
-    if available < total_sets:
-        return False, f"❌ Not enough Single Pack Poly! Available: {available}, Required: {total_sets}"
-    
-    # Deduct Single Pack Poly
-    self.db.deduct_warehouse_stock('Single Pack Poly', total_sets)
-    
-    lot_number = f"LOT{datetime.now().strftime('%Y%m%d')}-{batch_number}"
-    pack_date = datetime.now().strftime("%Y-%m-%d")
-    
-    self.db.add_iv_set_packing(pack_date, batch_number, total_sets, total_sets, packer_name, lot_number)
-    self.db.update_assembly_status(batch_number, 'Packed')
-    return True, f"✅ LOT {lot_number}: {total_sets} IV Sets packed by {packer_name}"
-
-# ============================================
-# IV SET - SEALING (Updated with stock check)
-# ============================================
-def seal_iv_sets(self, lot_number, sets_per_pack, sealer_name):
-    if not lot_number:
-        return False, "LOT number cannot be empty"
-    if sets_per_pack <= 0:
-        return False, "Sets per pack must be greater than 0"
-    if not sealer_name or sealer_name.strip() == '':
-        return False, "Sealer name cannot be empty"
-    
-    records = self.db.get_iv_set_packing_records()
-    pack_record = None
-    for r in records:
-        if r[5] == lot_number:
-            pack_record = r
-            break
-    
-    if not pack_record:
-        return False, f"❌ LOT {lot_number} not found!"
-    
-    total_sets = pack_record[3]
-    multi_pack_qty = (total_sets + sets_per_pack - 1) // sets_per_pack
-    
-    # Check Multi Pack Poly stock
-    available, unit = self.db.get_item_quantity('Multi Pack Poly')
-    if available < multi_pack_qty:
-        return False, f"❌ Not enough Multi Pack Poly! Available: {available}, Required: {multi_pack_qty}"
-    
-    # Deduct Multi Pack Poly
-    self.db.deduct_warehouse_stock('Multi Pack Poly', multi_pack_qty)
-    
-    seal_date = datetime.now().strftime("%Y-%m-%d")
-    self.db.add_iv_set_sealing(seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name)
-    self.db.update_packing_status(lot_number, 'Sealed')
-    return True, f"✅ {multi_pack_qty} Multi Packs created from LOT {lot_number} ({total_sets} IV Sets)"
-# ============================================
-# IV SET - SEALING (Updated with Bags)
-# ============================================
-def seal_iv_sets(self, lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name):
-    if not lot_number:
-        return False, "LOT number cannot be empty"
-    if bag_quantity <= 0:
-        return False, "Bag quantity must be greater than 0"
-    if multi_packs_per_bag <= 0:
-        return False, "Multi packs per bag must be greater than 0"
-    if sets_per_multi_pack <= 0:
-        return False, "Sets per multi pack must be greater than 0"
-    if not sealer_name or sealer_name.strip() == '':
-        return False, "Sealer name cannot be empty"
-    
-    # Get packing details
-    records = self.db.get_iv_set_packing_records()
-    pack_record = None
-    for r in records:
-        if r[5] == lot_number:
-            pack_record = r
-            break
-    
-    if not pack_record:
-        return False, f"❌ LOT {lot_number} not found!"
-    
-    total_multi_packs = bag_quantity * multi_packs_per_bag
-    total_sets = total_multi_packs * sets_per_multi_pack
-    
-    # Check Multi Pack Poly stock
-    available, unit = self.db.get_item_quantity('Multi Pack Poly')
-    if available < total_multi_packs:
-        return False, f"❌ Not enough Multi Pack Poly! Available: {available}, Required: {total_multi_packs}"
-    
-    seal_date = datetime.now().strftime("%Y-%m-%d")
-    self.db.add_iv_set_sealing(seal_date, lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name)
-    self.db.update_packing_status(lot_number, 'Sealed')
-    
-    return True, f"✅ {bag_quantity} Bags ({total_multi_packs} Multi Packs = {total_sets} PCS) sealed from LOT {lot_number}"
-
-def get_iv_set_sealing_records(self):
-    return self.db.get_iv_set_sealing_records()
