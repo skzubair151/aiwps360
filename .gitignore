@@ -1,0 +1,9 @@
+*.pyc
+__pycache__/
+production.db
+*.db
+.env
+static/uploads/*
+!static/uploads/.gitkeep
+*.log
+*.pid

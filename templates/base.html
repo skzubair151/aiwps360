@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIWPS — IV Set Manager</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-size: {{ app_settings.font_size }}px;
+            font-family: '{{ app_settings.font_family }}', sans-serif;
+        }
+        {% if app_settings.theme == 'ocean' %}
+        :root { --sidebar-bg: #0b2e3f; --sidebar-bg-hover: #123f56; --accent: #00acc1; --sidebar-text: #a8c5d1; }
+        {% elif app_settings.theme == 'forest' %}
+        :root { --sidebar-bg: #16281c; --sidebar-bg-hover: #1f3a28; --accent: #43a047; --sidebar-text: #a9c2ae; }
+        {% elif app_settings.theme == 'minimal_light' %}
+        :root { --sidebar-bg: #ffffff; --sidebar-bg-hover: #f0f0f0; --accent: #1565c0; --sidebar-text: #333333; }
+        .main-sidebar-title, .main-sidebar-username { color: #1565c0; }
+        {% endif %}
+        {% if app_settings.background_image %}
+        .bg-layer {
+            position: fixed; inset: 0; z-index: -1;
+            background-image: url('{{ url_for("static", filename="uploads/" + app_settings.background_image) }}');
+            background-size: cover; background-attachment: fixed; background-position: center;
+            opacity: {{ app_settings.background_opacity }}%;
+        }
+        {% endif %}
+        {% if app_settings.fit_to_window == 'on' %}
+        html, body { height: 100vh; overflow: hidden; }
+        .main-content { height: 100vh; overflow-y: auto; }
+        {% endif %}
+        {% if app_settings.tab_view == 'topbar' %}
+        .dept-layout { flex-direction: column; }
+        .dept-sidebar { width: 100%; display: flex; flex-direction: row; overflow-x: auto; }
+        .dept-sidebar button { border-bottom: none; border-right: 1px solid #eee; white-space: nowrap; }
+        {% endif %}
+    </style>
+</head>
+<body>
+    {% if app_settings.background_image %}<div class="bg-layer"></div>{% endif %}
+    <div class="app-layout">
+        <div class="main-sidebar">
+            <div class="main-sidebar-header">
+                <span class="main-sidebar-logo">🚀</span>
+                <div>
+                    <div class="main-sidebar-title">AIWPS360 ERP</div>
+                    <div style="font-size:9px; color:var(--sidebar-text); opacity:0.6; letter-spacing:1px;">by ZUBAIR</div>
+                </div>
+            </div>
+
+            <nav class="main-sidebar-nav">
+                <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">📊 <span>{{ tr('nav_dashboard') }}</span></a>
+                <a href="/warehouse" class="{% if active == 'warehouse' %}active{% endif %}">🏢 <span>{{ tr('nav_warehouse') }}</span></a>
+                <a href="/production" class="{% if active == 'production' %}active{% endif %}">🏭 <span>{{ tr('nav_production') }}</span></a>
+                <a href="/hr" class="{% if active == 'hr' %}active{% endif %}">👥 <span>{{ tr('nav_hr') }}</span></a>
+                <a href="/reports" class="{% if active == 'reports' %}active{% endif %}">📈 <span>{{ tr('nav_reports') }}</span></a>
+                <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">⚙️ <span>{{ tr('nav_settings') }}</span></a>
+            </nav>
+
+            <div class="main-sidebar-user">
+                <div class="main-sidebar-username">{{ session['user']['full_name'] }}</div>
+                <form method="post" action="/set_language" style="margin-bottom:6px;">
+                    <button type="submit" style="background:transparent; color:var(--accent); border:1px solid var(--accent); padding:4px 10px; font-size:11px; width:auto; margin:0; cursor:pointer; border-radius:4px;">{{ tr('lang_toggle') }}</button>
+                </form>
+                <a href="/logout" class="main-sidebar-logout">🚪 {{ tr('nav_logout') }}</a>
+            </div>
+
+            <div style="padding:10px 14px; border-top:1px solid #2a3644; font-size:9px; color:#555; line-height:1.6;">
+                Dev: ZUBAIR<br>
+                📱 +996990115990<br>
+                ✉️ skzubair151@gmail.com
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="flash-msg flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

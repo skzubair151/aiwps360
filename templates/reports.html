@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="dept-layout">
+    <div class="dept-sidebar" id="rep-sidebar">
+        <button data-target="r-summary" class="active">{{ tr('rep_summary') }}</button>
+        <button data-target="r-production">{{ tr('rep_production') }}</button>
+        <button data-target="r-warehouse">{{ tr('rep_warehouse') }}</button>
+        <button data-target="r-sterilization">{{ tr('rep_sterilization') }}</button>
+        <button data-target="r-attendance">{{ tr('rep_attendance') }}</button>
+    </div>
+
+    <div class="dept-content">
+
+        <div class="dept-panel active" id="r-summary">
+            <div class="card">
+                <h3>{{ tr('rep_summary') }}</h3>
+                <table>
+                    <tr><td><strong>{{ tr('rep_today_prod') }}</strong></td><td>{{ today_assembly }} {{ tr('pcs') }}</td></tr>
+                    <tr><td><strong>{{ tr('rep_wh_items') }}</strong></td><td>{{ stock['total_items'] }}</td></tr>
+                    <tr><td><strong>{{ tr('rep_sterilized') }}</strong></td><td>{{ sterilized['total_pcs'] }}</td></tr>
+                    <tr><td><strong>{{ tr('rep_total_emp') }}</strong></td><td>{{ total_employees }}</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="r-production">
+            <div class="card">
+                <h3>{{ tr('rep_prod_report') }}</h3>
+                <table>
+                    <tr><th>{{ tr('type') }}</th><th>{{ tr('person') }}</th><th>{{ tr('quantity') }}</th><th>{{ tr('date') }}</th><th>{{ tr('lot') }}</th></tr>
+                    {% for r in production_report %}
+                    <tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td><td>{{ r[4] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="r-warehouse">
+            <div class="card">
+                <h3>{{ tr('rep_wh_report') }}</h3>
+                <table>
+                    <tr><th>{{ tr('item') }}</th><th>{{ tr('quantity') }}</th><th>{{ tr('unit') }}</th></tr>
+                    {% for s in stock['items'] %}
+                    <tr><td>{{ s[0] }}</td><td>{{ s[1] }}</td><td>{{ s[2] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="r-sterilization">
+            <div class="card">
+                <h3>{{ tr('rep_ster_report') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('lot') }}</th><th>{{ tr('bags') }}</th><th>{{ tr('pcs') }}</th><th>{{ tr('person') }}</th></tr>
+                    {% for e in sterilization_entries %}
+                    <tr><td>{{ e[1] }}</td><td>{{ e[5] }}</td><td>{{ e[3] }}</td><td>{{ e[4] }}</td><td>{{ e[2] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="r-attendance">
+            <div class="card">
+                <h3>{{ tr('rep_att_report') }}</h3>
+                <form method="get" action="/reports">
+                    <label>{{ tr('date') }}</label>
+                    <input type="text" name="date" value="{{ selected_date }}" placeholder="YYYY-MM-DD">
+                    <button type="submit">{{ tr('show') }}</button>
+                </form>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('hr_employee') }}</th><th>{{ tr('hr_time') }}</th><th>{{ tr('status') }}</th><th>{{ tr('remark') }}</th></tr>
+                    {% for a in attendance %}
+                    <tr><td>{{ a[0] }}</td><td>{{ a[1] }}</td><td>{{ a[2] }}</td><td>{{ a[3] }}</td><td>{{ a[4] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function() {
+    var sidebar = document.getElementById('rep-sidebar');
+    var buttons = sidebar.querySelectorAll('button');
+    var panels = document.querySelectorAll('.dept-panel');
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+        });
+    });
+})();
+</script>
+
+{% endblock %}

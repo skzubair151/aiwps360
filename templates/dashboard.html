@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card">
+    <h3>{{ tr('dash_summary') }}</h3>
+    <table>
+        <tr>
+            <td><strong>{{ tr('dash_today_prod') }}</strong></td>
+            <td>{{ today_total }} {{ tr('pcs') }}</td>
+        </tr>
+        <tr>
+            <td><strong>{{ tr('dash_total_emp') }}</strong></td>
+            <td>{{ total_employees }}</td>
+        </tr>
+        <tr>
+            <td><strong>{{ tr('dash_wh_stock') }}</strong></td>
+            <td>{{ stock['total_items'] }}</td>
+        </tr>
+    </table>
+</div>
+
+<div class="card">
+    <h3>{{ tr('dash_prod_status') }}</h3>
+    <table>
+        <tr><th>{{ tr('dash_stage') }}</th><th>{{ tr('dash_total_qty') }}</th></tr>
+        <tr><td>{{ tr('dash_checking') }}</td><td>{{ total_checking }}</td></tr>
+        <tr><td>{{ tr('dash_assembly') }}</td><td>{{ total_assembly }}</td></tr>
+        <tr><td>{{ tr('dash_packing') }}</td><td>{{ total_packing }}</td></tr>
+        <tr><td>{{ tr('dash_sealing') }}</td><td>{{ total_sealing }}</td></tr>
+        <tr><td>{{ tr('dash_sterilized') }}</td><td>{{ total_sterilized }}</td></tr>
+    </table>
+</div>
+
+<div class="card">
+    <h3>{{ tr('dash_wh_invoice') }}</h3>
+    <table>
+        <tr><th>{{ tr('dash_item_invoice') }}</th><th style="text-align:right;">{{ tr('dash_quantity') }}</th></tr>
+        {% for item_name, data in stock_by_item.items() %}
+            <tr style="background:#f5f5f5;">
+                <td colspan="2">
+                    <strong>{{ item_name }}</strong>
+                    {% if data.low_stock %}<span style="color:#c62828; font-weight:700;"> {{ tr('wh_low_stock_alert') }}</span>{% endif %}
+                </td>
+            </tr>
+            {% if data.entries %}
+                {% for invoice_number, qty in data.entries %}
+                <tr>
+                    <td style="padding-left:20px;">{{ tr('invoice') }}: {{ invoice_number }}</td>
+                    <td style="text-align:right;">{{ qty }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr><td style="padding-left:20px; color:#999;">{{ tr('dash_no_stock') }}</td><td></td></tr>
+            {% endif %}
+            <tr style="font-weight:600; border-top:1px solid #333;{% if data.low_stock %} color:#c62828;{% endif %}">
+                <td style="text-align:right;">{{ tr('total') }}</td>
+                <td style="text-align:right;">{{ data.total }} {{ data.unit }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>{{ tr('dash_recent') }}</h3>
+    <table>
+        <tr><th>{{ tr('date') }}</th><th>{{ tr('type') }}</th><th>{{ tr('person') }}</th><th>{{ tr('dash_quantity') }}</th></tr>
+        {% for r in recent %}
+        <tr>
+            <td>{{ r[0] }}</td>
+            <td>{{ r[1] }}</td>
+            <td>{{ r[2] }}</td>
+            <td>{{ r[3] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+{% endblock %}

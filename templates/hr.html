@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="dept-layout">
+    <div class="dept-sidebar" id="hr-sidebar">
+        <button data-target="hr-employees" class="active">{{ tr('hr_employees') }}</button>
+        <button data-target="hr-attendance">{{ tr('hr_attendance') }}</button>
+    </div>
+
+    <div class="dept-content">
+
+        <div class="dept-panel active" id="hr-employees">
+            <div class="card">
+                <h3>{{ tr('hr_register') }}</h3>
+                <form method="post" action="/hr/add_employee">
+                    <label>{{ tr('hr_full_name') }}</label>
+                    <input type="text" name="full_name" required>
+                    
+                    <label>{{ tr('hr_national_id') }}</label>
+                    <input type="text" name="national_id">
+                    
+                    <label>{{ tr('hr_mobile1') }}</label>
+                    <input type="text" name="mobile1">
+                    
+                    <label>{{ tr('hr_mobile2') }}</label>
+                    <input type="text" name="mobile2">
+                    
+                    <label>{{ tr('address') }}</label>
+                    <input type="text" name="address">
+                    
+                    <label>{{ tr('hr_blood_group') }}</label>
+                    <select name="blood_group">
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                    </select>
+                    
+                    <button type="submit">{{ tr('hr_register_btn') }}</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>{{ tr('hr_employee_list') }}</h3>
+                <table>
+                    <tr>
+                        <th>{{ tr('code') }}</th>
+                        <th>{{ tr('hr_full_name') }}</th>
+                        <th>{{ tr('hr_mobile_col') }}</th>
+                        <th>{{ tr('hr_blood_group') }}</th>
+                    </tr>
+                    {% for e in employees %}
+                    <tr>
+                        <td>{{ e[0] }}</td>
+                        <td>{{ e[1] }}</td>
+                        <td>{{ e[3] }}</td>
+                        <td>{{ e[6] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="hr-attendance">
+            <div class="card">
+                <h3>{{ tr('hr_mark_attendance') }}</h3>
+                <form method="post" action="/hr/mark_attendance">
+                    <label>{{ tr('hr_employee') }}</label>
+                    <select name="employee_code" required>
+                        <option value="">{{ tr('hr_select_emp') }}</option>
+                        {% for e in employees %}
+                        <option value="{{ e[0] }}">{{ e[1] }} ({{ e[0] }})</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <label>{{ tr('status') }}</label>
+                    <select name="status">
+                        <option value="Present">{{ tr('hr_present') }}</option>
+                        <option value="Absent">{{ tr('hr_absent') }}</option>
+                        <option value="Leave">{{ tr('hr_leave') }}</option>
+                    </select>
+                    
+                    <label>{{ tr('remark') }}</label>
+                    <input type="text" name="remark" placeholder="{{ tr('remark') }}">
+                    
+                    <button type="submit">{{ tr('hr_mark_btn') }}</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>{{ tr('hr_today_attendance') }}</h3>
+                <table>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('hr_employee') }}</th>
+                        <th>{{ tr('hr_time') }}</th>
+                        <th>{{ tr('status') }}</th>
+                        <th>{{ tr('remark') }}</th>
+                    </tr>
+                    {% for a in attendance %}
+                    <tr>
+                        <td>{{ a[0] }}</td>
+                        <td>{{ a[1] }}</td>
+                        <td>{{ a[2] }}</td>
+                        <td>{{ a[3] }}</td>
+                        <td>{{ a[4] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function() {
+    var sidebar = document.getElementById('hr-sidebar');
+    var buttons = sidebar.querySelectorAll('button');
+    var panels = document.querySelectorAll('.dept-panel');
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+        });
+    });
+})();
+</script>
+
+{% endblock %}

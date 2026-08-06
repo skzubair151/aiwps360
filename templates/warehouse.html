@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="dept-layout">
+    <div class="dept-sidebar" id="wh-sidebar">
+        <button data-target="wh-suppliers" class="active">{{ tr('wh_suppliers') }}</button>
+        <button data-target="wh-raw">{{ tr('wh_raw') }}</button>
+        <button data-target="wh-products">{{ tr('wh_products') }}</button>
+        <button data-target="wh-stock">{{ tr('wh_stock') }}</button>
+    </div>
+
+    <div class="dept-content">
+
+        <div class="dept-panel active" id="wh-suppliers">
+            <div class="card">
+                <h3>{{ tr('wh_add_supplier') }}</h3>
+                <form method="post" action="/warehouse/add_supplier">
+                    <label>{{ tr('wh_supplier_name') }}</label>
+                    <input type="text" name="supplier_name" required>
+                    <label>{{ tr('address') }}</label>
+                    <input type="text" name="supplier_address">
+                    <label>{{ tr('wh_contact_person') }}</label>
+                    <input type="text" name="contact_person">
+                    <label>{{ tr('phone') }}</label>
+                    <input type="text" name="phone">
+                    <button type="submit">{{ tr('wh_add_supplier') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('wh_supplier_list') }}</h3>
+                <table>
+                    <tr><th>{{ tr('wh_supplier_name') }}</th><th>{{ tr('wh_contact_person') }}</th><th>{{ tr('phone') }}</th></tr>
+                    {% for s in suppliers %}
+                    <tr><td>{{ s[1] }}</td><td>{{ s[3] }}</td><td>{{ s[4] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="wh-raw">
+            <div class="card">
+                <h3>{{ tr('wh_receive_raw') }}</h3>
+                <form method="post" action="/warehouse/add_raw_material">
+                    <label>{{ tr('wh_supplier_name') }}</label>
+                    <input type="text" name="supplier_name" required>
+                    <label>{{ tr('wh_invoice_num') }}</label>
+                    <input type="text" name="invoice_number" required>
+                    <label>{{ tr('wh_item_name') }}</label>
+                    <input type="text" name="item_name" required>
+                    <label>{{ tr('quantity') }}</label>
+                    <input type="number" name="quantity" required>
+                    <label>{{ tr('unit') }}</label>
+                    <select name="unit">
+                        <option value="PCS">{{ tr('pcs') }}</option>
+                        <option value="KG">KG</option>
+                        <option value="BOX">BOX</option>
+                    </select>
+                    <label>{{ tr('wh_received_by') }}</label>
+                    <input type="text" name="received_by" required>
+                    <button type="submit">{{ tr('wh_record_entry') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('wh_raw_entries') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('wh_supplier_col') }}</th><th>{{ tr('wh_item_name') }}</th><th>{{ tr('quantity') }}</th></tr>
+                    {% for r in raw_materials %}
+                    <tr><td>{{ r[3] }}</td><td>{{ r[1] }}</td><td>{{ r[5] }}</td><td>{{ r[6] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="wh-products">
+            <div class="card">
+                <h3>{{ tr('wh_add_product') }}</h3>
+                <form method="post" action="/warehouse/add_product">
+                    <label>{{ tr('wh_product_name') }}</label>
+                    <input type="text" name="product_name" required>
+                    <label>{{ tr('unit') }}</label>
+                    <select name="unit">
+                        <option value="PCS">{{ tr('pcs') }}</option>
+                        <option value="BOX">BOX</option>
+                        <option value="KG">KG</option>
+                    </select>
+                    <label>{{ tr('wh_low_stock_qty') }}</label>
+                    <input type="number" name="low_stock_qty" value="10" required>
+                    <button type="submit">{{ tr('wh_add_product') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('wh_product_list') }}</h3>
+                <table>
+                    <tr><th>{{ tr('wh_product_col') }}</th><th>{{ tr('unit') }}</th></tr>
+                    {% for p in products %}
+                    <tr><td>{{ p[0] }}</td><td>{{ p[1] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="wh-stock">
+            <div class="card">
+                <h3>{{ tr('wh_stock') }}</h3>
+                <table>
+                    <tr><th>{{ tr('wh_item_name') }}</th><th>{{ tr('wh_quantity') }}</th><th>{{ tr('unit') }}</th></tr>
+                    {% for s in stock_items %}
+                    <tr><td>{{ s[0] }}</td><td>{{ s[1] }}</td><td>{{ s[2] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function() {
+    var sidebar = document.getElementById('wh-sidebar');
+    var buttons = sidebar.querySelectorAll('button');
+    var panels = document.querySelectorAll('.dept-panel');
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+        });
+    });
+})();
+</script>
+
+{% endblock %}

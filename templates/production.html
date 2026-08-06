@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="dept-layout">
+    <div class="dept-sidebar" id="prod-sidebar">
+        <button data-target="p-transfer" class="active">{{ tr('prod_transfer') }}</button>
+        <button data-target="p-checking">{{ tr('prod_checking') }}</button>
+        <button data-target="p-assembly">{{ tr('prod_assembly') }}</button>
+        <button data-target="p-packing">{{ tr('prod_packing') }}</button>
+        <button data-target="p-sealing">{{ tr('prod_sealing') }}</button>
+        <button data-target="p-ster-entry">{{ tr('prod_ster_entry') }}</button>
+        <button data-target="p-ster-start">{{ tr('prod_ster_start') }}</button>
+        <button data-target="p-ster-finish">{{ tr('prod_ster_finish') }}</button>
+        <button data-target="p-pack-after">{{ tr('prod_pack_after') }}</button>
+    </div>
+
+    <div class="dept-content">
+
+        <div class="dept-panel active" id="p-transfer">
+            <div class="card">
+                <h3>{{ tr('prod_transfer_title') }}</h3>
+                <form method="post" action="/production/transfer">
+                    <label>{{ tr('wh_item_name') }}</label>
+                    <select name="item_name" required>
+                        <option value="">-- {{ tr('wh_item_name') }} --</option>
+                        {% for p in products %}
+                        <option value="{{ p[0] }}">{{ p[0] }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>{{ tr('quantity') }}</label>
+                    <input type="number" name="quantity" required>
+                    <label>{{ tr('unit') }}</label>
+                    <select name="unit">
+                        <option value="PCS">{{ tr('pcs') }}</option>
+                        <option value="KG">KG</option>
+                        <option value="BOX">BOX</option>
+                    </select>
+                    <label>{{ tr('prod_received_by') }}</label>
+                    <input type="text" name="received_by" required>
+                    <label>{{ tr('prod_issued_by') }}</label>
+                    <input type="text" name="issued_by" required>
+                    <button type="submit">{{ tr('prod_transfer_btn') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_transfer_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('wh_item_name') }}</th><th>{{ tr('quantity') }}</th><th>{{ tr('prod_received') }}</th><th>{{ tr('prod_issued') }}</th></tr>
+                    {% for t in transfers %}
+                    <tr><td>{{ t[6] }}</td><td>{{ t[1] }}</td><td>{{ t[2] }}</td><td>{{ t[4] }}</td><td>{{ t[5] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="p-checking">
+            <div class="card">
+                <h3>{{ tr('prod_checking') }}</h3>
+                <form method="post" action="/production/checking">
+                    <label>{{ tr('wh_item_name') }}</label>
+                    <input type="text" name="item_name" required>
+                    <label>{{ tr('quantity') }}</label>
+                    <input type="number" name="quantity" required>
+                    <label>{{ tr('unit') }}</label>
+                    <select name="unit">
+                        <option value="PCS">{{ tr('pcs') }}</option>
+                        <option value="KG">KG</option>
+                        <option value="BOX">BOX</option>
+                    </select>
+                    <label>{{ tr('prod_checker_name') }}</label>
+                    <input type="text" name="checker_name" required>
+                    <button type="submit">{{ tr('prod_record_check') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_checking_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('wh_item_name') }}</th><th>{{ tr('quantity') }}</th><th>{{ tr('prod_checker') }}</th></tr>
+                    {% for c in checking_records %}
+                    <tr><td>{{ c[1] }}</td><td>{{ c[2] }}</td><td>{{ c[3] }}</td><td>{{ c[5] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="p-assembly">
+            <div class="card">
+                <h3>{{ tr('prod_assembly') }}</h3>
+                <form method="post" action="/production/assembly">
+                    <label>{{ tr('quantity') }}</label>
+                    <input type="number" name="quantity" required>
+                    <label>{{ tr('unit') }}</label>
+                    <select name="unit">
+                        <option value="PCS">{{ tr('pcs') }}</option>
+                    </select>
+                    <label>{{ tr('prod_assembler') }}</label>
+                    <input type="text" name="assembler_name" required>
+                    <button type="submit">{{ tr('prod_record_assembly') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_assembly_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_assembler_col') }}</th><th>{{ tr('quantity') }}</th></tr>
+                    {% for a in assembly_records %}
+                    <tr><td>{{ a[1] }}</td><td>{{ a[2] }}</td><td>{{ a[3] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="p-packing">
+            <div class="card">
+                <h3>{{ tr('prod_packing_title') }}</h3>
+                <form method="post" action="/production/packing_before_seal">
+                    <label>{{ tr('prod_lot_number') }}</label>
+                    <input type="text" name="lot_number" required placeholder="e.g. LOT001">
+                    <label>{{ tr('quantity') }}</label>
+                    <input type="number" name="quantity" required>
+                    <label>{{ tr('unit') }}</label>
+                    <select name="unit">
+                        <option value="PCS">{{ tr('pcs') }}</option>
+                    </select>
+                    <label>{{ tr('prod_packer') }}</label>
+                    <input type="text" name="packer_name" required>
+                    <button type="submit">{{ tr('prod_record_packing') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_packing_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_packer_col') }}</th><th>{{ tr('quantity') }}</th></tr>
+                    {% for p in packing_records %}
+                    <tr><td>{{ p[1] }}</td><td>{{ p[3] }}</td><td>{{ p[2] }}</td><td>{{ p[4] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="p-sealing">
+            <div class="card">
+                <h3>{{ tr('prod_sealing') }}</h3>
+                <form method="post" action="/production/sealing">
+                    <label>{{ tr('prod_lot_number') }}</label>
+                    <input type="text" name="lot_number" required placeholder="{{ tr('prod_lot_number') }}">
+                    <label>{{ tr('prod_sealing_qty') }}</label>
+                    <input type="number" name="sealing_qty" required>
+                    <label>{{ tr('prod_packing_qty') }}</label>
+                    <input type="number" name="packing_qty" required>
+                    <label>{{ tr('prod_sealer') }}</label>
+                    <input type="text" name="sealer_name" required>
+                    <button type="submit">{{ tr('prod_record_sealing') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_sealing_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_sealer_col') }}</th><th>{{ tr('prod_sealing_qty_col') }}</th></tr>
+                    {% for s in sealing_records %}
+                    <tr><td>{{ s[1] }}</td><td>{{ s[3] }}</td><td>{{ s[2] }}</td><td>{{ s[4] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="p-ster-entry">
+            <div class="card">
+                <h3>{{ tr('prod_ster_entry_title') }}</h3>
+                <form method="post" action="/production/sterilization_entry">
+                    <label>{{ tr('prod_lot_number') }}</label>
+                    <input type="text" name="lot_number" required>
+                    <label>{{ tr('prod_bag_qty') }}</label>
+                    <input type="number" name="bag_quantity" value="0" required>
+                    <label>{{ tr('prod_pcs_qty') }}</label>
+                    <input type="number" name="pcs_quantity" value="0" required>
+                    <label>{{ tr('prod_person_name') }}</label>
+                    <input type="text" name="person_name" required>
+                    <button type="submit">{{ tr('prod_record_entry') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_ster_entry_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_bag_qty') }}</th><th>{{ tr('prod_pcs_qty') }}</th><th>{{ tr('prod_person_name') }}</th></tr>
+                    {% for e in sterilization_entries %}
+                    <tr><td>{{ e[1] }}</td><td>{{ e[5] }}</td><td>{{ e[3] }}</td><td>{{ e[4] }}</td><td>{{ e[2] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="p-ster-start">
+            <div class="card">
+                <h3>{{ tr('prod_ster_start_title') }}</h3>
+                <form method="post" action="/production/sterilization_start">
+                    <label>{{ tr('prod_lot_number') }}</label>
+                    <input type="text" name="lot_number" required>
+                    <label>{{ tr('prod_bag_qty') }}</label>
+                    <input type="number" name="bag_quantity" value="0" required>
+                    <label>{{ tr('prod_pcs_qty') }}</label>
+                    <input type="number" name="pcs_quantity" value="0" required>
+                    <label>{{ tr('prod_operator') }}</label>
+                    <input type="text" name="operator_name" required>
+                    <button type="submit">{{ tr('prod_record_start') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_ster_start_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('prod_datetime') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_bag_qty') }}</th><th>{{ tr('prod_pcs_qty') }}</th><th>{{ tr('prod_operator_col') }}</th></tr>
+                    {% for s in sterilization_starts %}
+                    <tr><td>{{ s[1] }}</td><td>{{ s[5] }}</td><td>{{ s[3] }}</td><td>{{ s[4] }}</td><td>{{ s[2] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="p-ster-finish">
+            <div class="card">
+                <h3>{{ tr('prod_ster_finish_title') }}</h3>
+                <form method="post" action="/production/sterilization_finish">
+                    <label>{{ tr('prod_lot_number') }}</label>
+                    <input type="text" name="lot_number" required>
+                    <label>{{ tr('prod_bag_qty') }}</label>
+                    <input type="number" name="bag_quantity" value="0" required>
+                    <label>{{ tr('prod_pcs_qty') }}</label>
+                    <input type="number" name="pcs_quantity" value="0" required>
+                    <label>{{ tr('prod_operator') }}</label>
+                    <input type="text" name="operator_name" required>
+                    <button type="submit">{{ tr('prod_record_finish') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_ster_finish_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('prod_datetime') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_bag_qty') }}</th><th>{{ tr('prod_pcs_qty') }}</th><th>{{ tr('prod_operator_col') }}</th></tr>
+                    {% for f in sterilization_finishes %}
+                    <tr><td>{{ f[1] }}</td><td>{{ f[5] }}</td><td>{{ f[3] }}</td><td>{{ f[4] }}</td><td>{{ f[2] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <div class="dept-panel" id="p-pack-after">
+            <div class="card">
+                <h3>{{ tr('prod_pack_after') }}</h3>
+                <form method="post" action="/production/packing_after_sterile">
+                    <label>{{ tr('prod_lot_number') }}</label>
+                    <input type="text" name="lot_number" required>
+                    <label>{{ tr('prod_bag_qty') }}</label>
+                    <input type="number" name="bag_quantity" value="0" required>
+                    <label>{{ tr('prod_pcs_qty') }}</label>
+                    <input type="number" name="pcs_quantity" value="0" required>
+                    <label>{{ tr('prod_packer') }}</label>
+                    <input type="text" name="packer_name" required>
+                    <button type="submit">{{ tr('prod_record_packing') }}</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>{{ tr('prod_pack_after_history') }}</h3>
+                <table>
+                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_bag_qty') }}</th><th>{{ tr('prod_pcs_qty') }}</th><th>{{ tr('prod_packer_col') }}</th></tr>
+                    {% for p in packing_after_sterile %}
+                    <tr><td>{{ p[1] }}</td><td>{{ p[3] }}</td><td>{{ p[4] }}</td><td>{{ p[5] }}</td><td>{{ p[2] }}</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function() {
+    var sidebar = document.getElementById('prod-sidebar');
+    var buttons = sidebar.querySelectorAll('button');
+    var panels = document.querySelectorAll('.dept-panel');
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+        });
+    });
+})();
+</script>
+
+{% endblock %}
