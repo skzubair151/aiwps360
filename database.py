@@ -1,4 +1,4 @@
-# PART 1: DATABASE LAYER (COMPLETE - WITH USERS + SALES MODULE)
+# PART 1: DATABASE LAYER (COMPLETE - WITH USERS + SALES + IV SET)
 import sqlite3
 from datetime import datetime
 import hashlib
@@ -17,8 +17,6 @@ class Database:
         # ============================================
         # WAREHOUSE TABLES
         # ============================================
-        
-        # 1. Products Master List
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS products (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +27,6 @@ class Database:
             )
         ''')
         
-        # 2. Suppliers
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS suppliers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +39,6 @@ class Database:
             )
         ''')
         
-        # 3. Raw Material Entry
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS raw_material_entry (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +54,6 @@ class Database:
             )
         ''')
         
-        # 4. Warehouse Stock
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS warehouse_stock (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,8 +67,6 @@ class Database:
         # ============================================
         # PRODUCTION TABLES
         # ============================================
-        
-        # 5. Warehouse to Production Transfer
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS warehouse_to_production (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,7 +81,6 @@ class Database:
             )
         ''')
         
-        # 6. Checking Records
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS checking_records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,7 +94,6 @@ class Database:
             )
         ''')
         
-        # 7. Assembly Records
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS assembly_records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,7 +106,6 @@ class Database:
             )
         ''')
         
-        # 8. Packing Before Seal (LOT Created)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS packing_before_seal (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,7 +118,6 @@ class Database:
             )
         ''')
         
-        # 9. Sealing Records
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sealing_records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -143,7 +132,6 @@ class Database:
             )
         ''')
         
-        # 10. Sterilization Entry
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sterilization_entry (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,7 +146,6 @@ class Database:
             )
         ''')
         
-        # 11. Sterilization Start
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sterilization_start (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -173,7 +160,6 @@ class Database:
             )
         ''')
         
-        # 12. Sterilization Finish
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sterilization_finish (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -188,7 +174,6 @@ class Database:
             )
         ''')
         
-        # 13. Packing After Sterilization
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS packing_after_sterile (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -206,8 +191,6 @@ class Database:
         # ============================================
         # HR MANAGEMENT TABLES
         # ============================================
-        
-        # 14. Employees
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS employees (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -224,7 +207,6 @@ class Database:
             )
         ''')
         
-        # 15. Attendance
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS attendance (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -242,8 +224,6 @@ class Database:
         # ============================================
         # SYSTEM TABLES
         # ============================================
-        
-        # 16. Language Settings
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS system_settings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -252,7 +232,6 @@ class Database:
             )
         ''')
         
-        # 17. Employee Code Counter
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS employee_counter (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -279,8 +258,6 @@ class Database:
         # ============================================
         # SALES MODULE TABLES
         # ============================================
-        
-        # 18. Customers
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS customers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -296,7 +273,6 @@ class Database:
             )
         ''')
         
-        # 19. Sales Orders
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sales_orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -313,7 +289,6 @@ class Database:
             )
         ''')
         
-        # 20. Sales Order Items
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS sales_order_items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -326,7 +301,6 @@ class Database:
             )
         ''')
         
-        # 21. Invoices
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS invoices (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -345,7 +319,6 @@ class Database:
             )
         ''')
         
-        # 22. Customer Counter
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS customer_counter (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -353,7 +326,6 @@ class Database:
             )
         ''')
         
-        # 23. Order Counter
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS order_counter (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -361,7 +333,6 @@ class Database:
             )
         ''')
         
-        # 24. Invoice Counter
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS invoice_counter (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -369,12 +340,81 @@ class Database:
             )
         ''')
         
-        # Insert default settings
+        # ============================================
+        # IV SET MODULE TABLES
+        # ============================================
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS iv_set_bom (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                component_name TEXT NOT NULL,
+                quantity_per_set INTEGER NOT NULL DEFAULT 1,
+                unit TEXT DEFAULT 'PCS'
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS iv_set_assembly (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                assembly_date TEXT NOT NULL,
+                batch_number TEXT NOT NULL,
+                total_sets INTEGER NOT NULL,
+                chamber_used INTEGER NOT NULL,
+                needle_used INTEGER NOT NULL,
+                roller_used INTEGER NOT NULL,
+                latex_used INTEGER NOT NULL,
+                tub_used INTEGER NOT NULL,
+                assembler_name TEXT NOT NULL,
+                status TEXT DEFAULT 'Pending',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS iv_set_packing (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pack_date TEXT NOT NULL,
+                batch_number TEXT NOT NULL,
+                total_sets INTEGER NOT NULL,
+                single_pack_used INTEGER NOT NULL,
+                packer_name TEXT NOT NULL,
+                lot_number TEXT UNIQUE NOT NULL,
+                status TEXT DEFAULT 'Pending',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (batch_number) REFERENCES iv_set_assembly(batch_number)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS iv_set_sealing (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seal_date TEXT NOT NULL,
+                lot_number TEXT NOT NULL,
+                multi_pack_qty INTEGER NOT NULL,
+                sets_per_pack INTEGER DEFAULT 50,
+                total_sets INTEGER NOT NULL,
+                sealer_name TEXT NOT NULL,
+                status TEXT DEFAULT 'Completed',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (lot_number) REFERENCES iv_set_packing(lot_number)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS batch_counter (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_number INTEGER DEFAULT 0
+            )
+        ''')
+        
+        # ============================================
+        # INSERT DEFAULT VALUES
+        # ============================================
         cursor.execute("INSERT OR IGNORE INTO system_settings (setting_key, setting_value) VALUES ('language', 'EN')")
         cursor.execute("INSERT OR IGNORE INTO employee_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO customer_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO order_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO invoice_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO batch_counter (id, last_number) VALUES (1, 0)")
         
         conn.commit()
         conn.close()
@@ -401,7 +441,7 @@ class Database:
         # Insert default stock entries
         for product in ['Chamber', 'Needle 35mm', 'Needle 39mm', 'Latex', 'Roller', 'Tub', 'Single Pack Poly', 'Multi Pack Poly']:
             cursor.execute(
-                "INSERT OR IGNORE INTO warehouse_stock (item_name, quantity, unit) VALUES (?, 0, 'PCS')",
+                "INSERT OR IGNORE INTO warehouse_stock (item_name, quantity, unit) VALUES (?, 1000, 'PCS')",
                 (product,)
             )
         
@@ -415,11 +455,30 @@ class Database:
                 ('admin', hashed, 'Administrator', 'Admin', today)
             )
         
+        # Default BOM
+        cursor.execute("SELECT COUNT(*) FROM iv_set_bom")
+        if cursor.fetchone()[0] == 0:
+            default_bom = [
+                ('Chamber', 1, 'PCS'),
+                ('Needle 35mm', 1, 'PCS'),
+                ('Roller', 1, 'PCS'),
+                ('Latex', 1, 'PCS'),
+                ('Tub', 1, 'PCS'),
+                ('Single Pack Poly', 1, 'PCS'),
+                ('Multi Pack Poly', 1, 'PCS')
+            ]
+            for item in default_bom:
+                cursor.execute(
+                    "INSERT INTO iv_set_bom (component_name, quantity_per_set, unit) VALUES (?, ?, ?)",
+                    (item[0], item[1], item[2])
+                )
+        
         # Default counters
         cursor.execute("INSERT OR IGNORE INTO employee_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO customer_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO order_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO invoice_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO batch_counter (id, last_number) VALUES (1, 0)")
         
         conn.commit()
         conn.close()
@@ -1173,6 +1232,174 @@ class Database:
         return result
 
     # ============================================
+    # IV SET - BATCH MANAGEMENT
+    # ============================================
+    def get_next_batch_number(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE batch_counter SET last_number = last_number + 1 WHERE id = 1")
+        cursor.execute("SELECT last_number FROM batch_counter WHERE id = 1")
+        next_num = cursor.fetchone()[0]
+        conn.commit()
+        conn.close()
+        return f"B{next_num:04d}"
+
+    def get_iv_set_bom(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT component_name, quantity_per_set, unit FROM iv_set_bom ORDER BY id")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def check_iv_set_stock(self, quantity):
+        """Check if all components are available for assembly"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        components = {
+            'Chamber': 0,
+            'Needle 35mm': 0,
+            'Roller': 0,
+            'Latex': 0,
+            'Tub': 0,
+            'Single Pack Poly': 0,
+            'Multi Pack Poly': 0
+        }
+        
+        cursor.execute("SELECT item_name, quantity FROM warehouse_stock")
+        stock = dict(cursor.fetchall())
+        
+        for comp in components:
+            components[comp] = stock.get(comp, 0)
+        
+        conn.close()
+        
+        required = quantity
+        can_assemble = True
+        shortages = []
+        
+        for comp in ['Chamber', 'Needle 35mm', 'Roller', 'Latex', 'Tub']:
+            if components.get(comp, 0) < required:
+                can_assemble = False
+                shortages.append(f"{comp}: {components.get(comp, 0)} available, {required} required")
+        
+        return can_assemble, components, shortages
+
+    def deduct_iv_set_components(self, quantity):
+        """Deduct components from warehouse stock"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        components = ['Chamber', 'Needle 35mm', 'Roller', 'Latex', 'Tub']
+        for comp in components:
+            cursor.execute(
+                "UPDATE warehouse_stock SET quantity = quantity - ? WHERE item_name = ?",
+                (quantity, comp)
+            )
+        
+        conn.commit()
+        conn.close()
+        return True
+
+    def add_iv_set_assembly(self, assembly_date, batch_number, total_sets, chamber_used, needle_used, roller_used, latex_used, tub_used, assembler_name):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO iv_set_assembly (assembly_date, batch_number, total_sets, chamber_used, needle_used, roller_used, latex_used, tub_used, assembler_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (assembly_date, batch_number, total_sets, chamber_used, needle_used, roller_used, latex_used, tub_used, assembler_name)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_iv_set_assembly_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, assembly_date, batch_number, total_sets, assembler_name, status FROM iv_set_assembly ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def add_iv_set_packing(self, pack_date, batch_number, total_sets, single_pack_used, packer_name, lot_number):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO iv_set_packing (pack_date, batch_number, total_sets, single_pack_used, packer_name, lot_number) VALUES (?, ?, ?, ?, ?, ?)",
+            (pack_date, batch_number, total_sets, single_pack_used, packer_name, lot_number)
+        )
+        cursor.execute(
+            "UPDATE warehouse_stock SET quantity = quantity - ? WHERE item_name = 'Single Pack Poly'",
+            (single_pack_used,)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_iv_set_packing_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, pack_date, batch_number, total_sets, packer_name, lot_number, status FROM iv_set_packing ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def add_iv_set_sealing(self, seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO iv_set_sealing (seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name) VALUES (?, ?, ?, ?, ?, ?)",
+            (seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name)
+        )
+        cursor.execute(
+            "UPDATE warehouse_stock SET quantity = quantity - ? WHERE item_name = 'Multi Pack Poly'",
+            (multi_pack_qty,)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_iv_set_sealing_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name, status FROM iv_set_sealing ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def get_pending_batches_for_packing(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT batch_number, total_sets FROM iv_set_assembly WHERE status = 'Pending'")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def get_pending_lots_for_sealing(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT lot_number, total_sets FROM iv_set_packing WHERE status = 'Pending'")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def update_assembly_status(self, batch_number, status):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE iv_set_assembly SET status = ? WHERE batch_number = ?", (status, batch_number))
+        conn.commit()
+        conn.close()
+        return True
+
+    def update_packing_status(self, lot_number, status):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE iv_set_packing SET status = ? WHERE lot_number = ?", (status, lot_number))
+        conn.commit()
+        conn.close()
+        return True
+
+    # ============================================
     # DELETE RECORDS
     # ============================================
     def delete_raw_material_entry(self, record_id):
@@ -1235,6 +1462,30 @@ class Database:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM packing_after_sterile WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+
+    def delete_iv_set_assembly(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM iv_set_assembly WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+
+    def delete_iv_set_packing(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM iv_set_packing WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+
+    def delete_iv_set_sealing(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM iv_set_sealing WHERE id = ?", (record_id,))
         conn.commit()
         conn.close()
         return True

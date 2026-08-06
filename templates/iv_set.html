@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="dept-layout">
+    <div class="dept-sidebar" id="iv-sidebar">
+        <button data-target="iv-bom" class="active">📋 BOM</button>
+        <button data-target="iv-assembly">🔧 Assembly</button>
+        <button data-target="iv-packing">📦 Packing</button>
+        <button data-target="iv-sealing">🔒 Sealing</button>
+    </div>
+
+    <div class="dept-content">
+
+        <!-- BOM Panel -->
+        <div class="dept-panel active" id="iv-bom">
+            <div class="card">
+                <h3>📋 IV Set Bill of Materials</h3>
+                <p style="color:#555; margin-bottom:12px;">1 IV Set = 1 Chamber + 1 Needle + 1 Roller + 1 Latex + 1 Tub + 1 Single Pack Poly</p>
+                <table>
+                    <tr>
+                        <th>Component</th>
+                        <th>Quantity per Set</th>
+                        <th>Unit</th>
+                    </tr>
+                    {% for b in bom %}
+                    <tr>
+                        <td>{{ b[0] }}</td>
+                        <td>{{ b[1] }}</td>
+                        <td>{{ b[2] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Assembly Panel -->
+        <div class="dept-panel" id="iv-assembly">
+            <div class="card">
+                <h3>🔧 Assemble IV Sets</h3>
+                <p style="color:#555; margin-bottom:12px;">⚠️ This will deduct components from warehouse stock automatically!</p>
+                <form method="post" action="/iv_set/assemble">
+                    <label>Number of IV Sets</label>
+                    <input type="number" name="quantity" required placeholder="e.g. 100">
+                    <label>Assembler Name</label>
+                    <input type="text" name="assembler_name" required>
+                    <button type="submit">Assemble IV Sets</button>
+                </form>
+            </div>
+            <div class="card">
+                <h3>📜 Assembly History</h3>
+                <table>
+                    <tr>
+                        <th>Date</th>
+                        <th>Batch</th>
+                        <th>Sets</th>
+                        <th>Assembler</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                    {% for a in assembly_records %}
+                    <tr>
+                        <td>{{ a[1] }}</td>
+                        <td>{{ a[2] }}</td>
+                        <td>{{ a[3] }}</td>
+                        <td>{{ a[4] }}</td>
+                        <td>{{ a[5] }}</td>
+                        <td>
+                            <form method="post" action="/iv_set/delete_assembly/{{ a[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Packing Panel -->
+        <div class="dept-panel" id="iv-packing">
+            <div class="card">
+                <h3>📦 Pack IV Sets (Single Pack)</h3>
+                <p style="color:#555; margin-bottom:12px;">1 IV Set + 1 Single Pack Poly = Packed IV Set</p>
+                <form method="post" action="/iv_set/pack">
+                    <label>Select Batch to Pack</label>
+                    <select name="batch_number" required>
+                        <option value="">-- Select Pending Batch --</option>
+                        {% for b in pending_batches %}
+                        <option value="{{ b[0] }}">{{ b[0] }} ({{ b[1] }} sets)</option>
+                        {% endfor %}
+                    </select>
+                    <label>Packer Name</label>
+                    <input type="text" name="packer_name" required>
+                    <button type="submit">Pack & Create LOT</button>
+                </form>
+                <p style="color:#555; margin-top:8px; font-size:12px;">⚠️ This will automatically deduct Single Pack Poly from warehouse stock.</p>
+            </div>
+            <div class="card">
+                <h3>📜 Packing History</h3>
+                <table>
+                    <tr>
+                        <th>Date</th>
+                        <th>Batch</th>
+                        <th>Sets</th>
+                        <th>Packer</th>
+                        <th>LOT</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                    {% for p in packing_records %}
+                    <tr>
+                        <td>{{ p[1] }}</td>
+                        <td>{{ p[2] }}</td>
+                        <td>{{ p[3] }}</td>
+                        <td>{{ p[4] }}</td>
+                        <td>{{ p[5] }}</td>
+                        <td>{{ p[6] }}</td>
+                        <td>
+                            <form method="post" action="/iv_set/delete_packing/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Sealing Panel -->
+        <div class="dept-panel" id="iv-sealing">
+            <div class="card">
+                <h3>🔒 Seal IV Sets (Multi Pack)</h3>
+                <p style="color:#555; margin-bottom:12px;">50 Packed IV Sets = 1 Multi Pack Poly</p>
+                <form method="post" action="/iv_set/seal">
+                    <label>Select LOT to Seal</label>
+                    <select name="lot_number" required>
+                        <option value="">-- Select Pending LOT --</option>
+                        {% for l in pending_lots %}
+                        <option value="{{ l[0] }}">{{ l[0] }} ({{ l[1] }} sets)</option>
+                        {% endfor %}
+                    </select>
+                    <label>Sets per Multi Pack</label>
+                    <input type="number" name="sets_per_pack" value="50" required>
+                    <label>Sealer Name</label>
+                    <input type="text" name="sealer_name" required>
+                    <button type="submit">Seal & Create Multi Packs</button>
+                </form>
+                <p style="color:#555; margin-top:8px; font-size:12px;">⚠️ This will automatically deduct Multi Pack Poly from warehouse stock.</p>
+            </div>
+            <div class="card">
+                <h3>📜 Sealing History</h3>
+                <table>
+                    <tr>
+                        <th>Date</th>
+                        <th>LOT</th>
+                        <th>Multi Packs</th>
+                        <th>Sets/Pack</th>
+                        <th>Total Sets</th>
+                        <th>Sealer</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                    {% for s in sealing_records %}
+                    <tr>
+                        <td>{{ s[1] }}</td>
+                        <td>{{ s[2] }}</td>
+                        <td>{{ s[3] }}</td>
+                        <td>{{ s[4] }}</td>
+                        <td>{{ s[5] }}</td>
+                        <td>{{ s[6] }}</td>
+                        <td>{{ s[7] }}</td>
+                        <td>
+                            <form method="post" action="/iv_set/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function() {
+    var sidebar = document.getElementById('iv-sidebar');
+    var buttons = sidebar.querySelectorAll('button');
+    var panels = document.querySelectorAll('.dept-panel');
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+        });
+    });
+})();
+</script>
+
+{% endblock %}
