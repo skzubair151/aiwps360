@@ -4,14 +4,20 @@ from auth_manager import AuthManager
 from translations import get_tr
 from datetime import datetime
 import sqlite3
+import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'change-this-to-something-random-later'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 manager = ProductionManager()
 auth = AuthManager()
 
-# --- Low stock threshold tracking (extra table, doesn't touch original schema) ---
+# ============================================
+# LOW STOCK THRESHOLDS
+# ============================================
 def setup_thresholds_table():
     conn = sqlite3.connect('production.db')
     cursor = conn.cursor()
@@ -45,13 +51,9 @@ def set_threshold(item_name, threshold):
 
 setup_thresholds_table()
 
-# --- App appearance settings (font size, background, transparency, etc.) ---
-import os
-from werkzeug.utils import secure_filename
-
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
+# ============================================
+# APP SETTINGS
+# ============================================
 DEFAULT_SETTINGS = {
     'font_size': '14',
     'font_family': 'Segoe UI',
@@ -99,9 +101,11 @@ def set_setting(key, value):
 
 setup_settings_table()
 
+# ============================================
+# CONTEXT PROCESSOR
+# ============================================
 @app.context_processor
 def inject_settings():
-    """Makes app_settings and tr() available in every template automatically"""
     settings = get_all_settings()
     lang = session.get('lang', settings.get('default_language', 'EN'))
     return {
@@ -111,9 +115,11 @@ def inject_settings():
     }
 
 def login_required():
-    """Returns True if nobody is logged in"""
     return 'user' not in session
 
+# ============================================
+# AUTH ROUTES
+# ============================================
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -154,6 +160,9 @@ def logout():
     session.pop('user', None)
     return redirect(url_for('login'))
 
+# ============================================
+# DASHBOARD
+# ============================================
 @app.route('/')
 def home():
     if login_required():
@@ -170,7 +179,6 @@ def home():
     )
     recent = cursor.fetchall()
 
-    # Per-stage production totals (all-time)
     cursor.execute("SELECT SUM(quantity) FROM checking_records")
     total_checking = cursor.fetchone()[0] or 0
     cursor.execute("SELECT SUM(quantity) FROM assembly_records")
@@ -181,18 +189,14 @@ def home():
     total_sealing = cursor.fetchone()[0] or 0
     cursor.execute("SELECT SUM(pcs_quantity) FROM sterilization_finish")
     total_sterilized = cursor.fetchone()[0] or 0
-
     conn.close()
 
     total_employees = len(manager.get_all_employees())
     stock = manager.get_warehouse_stock()
-
-    # Group raw material entries by item, for an invoice-wise breakdown
     raw_materials = manager.get_raw_material_entries()
     all_products = manager.get_all_products()
 
     stock_by_item = {}
-    # Start every known product at zero, so items with no invoices yet still show
     for p in all_products:
         stock_by_item[p[0]] = {'entries': [], 'total': 0, 'unit': p[1]}
 
@@ -226,6 +230,9 @@ def home():
         total_sterilized=total_sterilized
     )
 
+# ============================================
+# WAREHOUSE ROUTES (FULL CRUD)
+# ============================================
 @app.route('/warehouse')
 def warehouse():
     if login_required():
@@ -245,36 +252,53 @@ def warehouse():
         raw_materials=raw_materials
     )
 
+# Products - CRUD
 @app.route('/warehouse/add_product', methods=['POST'])
 def add_product():
     if login_required():
         return redirect(url_for('login'))
-
     product_name = request.form.get('product_name', '')
     unit = request.form.get('unit', 'PCS')
     low_stock_qty = int(request.form.get('low_stock_qty', 10))
-
     manager.add_product(product_name, unit)
     set_threshold(product_name, low_stock_qty)
+    flash(f'✅ Product "{product_name}" added successfully!', 'success')
     return redirect(url_for('warehouse'))
 
+@app.route('/warehouse/delete_product/<product_name>', methods=['POST'])
+def delete_product(product_name):
+    if login_required():
+        return redirect(url_for('login'))
+    success, message = manager.delete_product(product_name)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('warehouse'))
+
+# Suppliers - CRUD
 @app.route('/warehouse/add_supplier', methods=['POST'])
 def add_supplier():
     if login_required():
         return redirect(url_for('login'))
-
     supplier_name = request.form.get('supplier_name', '')
     supplier_address = request.form.get('supplier_address', '')
     contact_person = request.form.get('contact_person', '')
     phone = request.form.get('phone', '')
-    manager.add_supplier(supplier_name, supplier_address, contact_person, phone)
+    success, message = manager.add_supplier(supplier_name, supplier_address, contact_person, phone)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('warehouse'))
 
+@app.route('/warehouse/delete_supplier/<supplier_name>', methods=['POST'])
+def delete_supplier(supplier_name):
+    if login_required():
+        return redirect(url_for('login'))
+    success, message = manager.delete_supplier(supplier_name)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('warehouse'))
+
+# Raw Material - CRUD
 @app.route('/warehouse/add_raw_material', methods=['POST'])
 def add_raw_material():
     if login_required():
         return redirect(url_for('login'))
-
     supplier_name = request.form.get('supplier_name', '')
     invoice_number = request.form.get('invoice_number', '')
     item_name = request.form.get('item_name', '')
@@ -282,13 +306,35 @@ def add_raw_material():
     unit = request.form.get('unit', 'PCS')
     received_by = request.form.get('received_by', '')
     entry_date = datetime.now().strftime("%Y-%m-%d")
-
-    manager.add_raw_material_entry(
+    success, message = manager.add_raw_material_entry(
         supplier_name, '', entry_date, invoice_number,
         item_name, quantity, unit, received_by
     )
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('warehouse'))
 
+@app.route('/warehouse/delete_raw_material/<int:record_id>', methods=['POST'])
+def delete_raw_material(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_raw_material_entry(record_id)
+    flash('✅ Record deleted!', 'success')
+    return redirect(url_for('warehouse'))
+
+# Update Stock Threshold
+@app.route('/warehouse/update_threshold', methods=['POST'])
+def update_threshold():
+    if login_required():
+        return redirect(url_for('login'))
+    item_name = request.form.get('item_name', '')
+    threshold = int(request.form.get('threshold', 10))
+    set_threshold(item_name, threshold)
+    flash(f'✅ Threshold for "{item_name}" updated to {threshold}!', 'success')
+    return redirect(url_for('warehouse'))
+
+# ============================================
+# PRODUCTION ROUTES (FULL CRUD)
+# ============================================
 @app.route('/production')
 def production():
     if login_required():
@@ -320,176 +366,378 @@ def production():
         packing_after_sterile=packing_after_sterile
     )
 
+# Transfer - CRUD
 @app.route('/production/transfer', methods=['POST'])
 def production_transfer():
     if login_required():
         return redirect(url_for('login'))
-
     item_name = request.form.get('item_name', '')
     quantity = int(request.form.get('quantity', 0))
     unit = request.form.get('unit', 'PCS')
     received_by = request.form.get('received_by', '')
     issued_by = request.form.get('issued_by', '')
     transfer_date = datetime.now().strftime("%Y-%m-%d")
-
-    manager.transfer_to_production(item_name, quantity, unit, received_by, issued_by, transfer_date)
+    success, message = manager.transfer_to_production(item_name, quantity, unit, received_by, issued_by, transfer_date)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+@app.route('/production/delete_transfer/<int:record_id>', methods=['POST'])
+def delete_transfer(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_transfer_to_production(record_id)
+    flash('✅ Transfer record deleted!', 'success')
+    return redirect(url_for('production'))
+
+# Checking - CRUD
 @app.route('/production/checking', methods=['POST'])
 def production_checking():
     if login_required():
         return redirect(url_for('login'))
-
     item_name = request.form.get('item_name', '')
     quantity = int(request.form.get('quantity', 0))
     unit = request.form.get('unit', 'PCS')
     checker_name = request.form.get('checker_name', '')
     check_date = datetime.now().strftime("%Y-%m-%d")
-
-    manager.add_checking_record(check_date, item_name, quantity, unit, checker_name)
+    success, message = manager.add_checking_record(check_date, item_name, quantity, unit, checker_name)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+@app.route('/production/delete_checking/<int:record_id>', methods=['POST'])
+def delete_checking(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_checking_record(record_id)
+    flash('✅ Checking record deleted!', 'success')
+    return redirect(url_for('production'))
+
+# Assembly - CRUD
 @app.route('/production/assembly', methods=['POST'])
 def production_assembly():
     if login_required():
         return redirect(url_for('login'))
-
     quantity = int(request.form.get('quantity', 0))
     unit = request.form.get('unit', 'PCS')
     assembler_name = request.form.get('assembler_name', '')
     assembly_date = datetime.now().strftime("%Y-%m-%d")
-
-    manager.add_assembly_record(assembly_date, assembler_name, quantity, unit)
+    success, message = manager.add_assembly_record(assembly_date, assembler_name, quantity, unit)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+@app.route('/production/delete_assembly/<int:record_id>', methods=['POST'])
+def delete_assembly(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_assembly_record(record_id)
+    flash('✅ Assembly record deleted!', 'success')
+    return redirect(url_for('production'))
+
+# Packing Before Seal - CRUD
 @app.route('/production/packing_before_seal', methods=['POST'])
 def production_packing_before_seal():
     if login_required():
         return redirect(url_for('login'))
-
     lot_number = request.form.get('lot_number', '')
     quantity = int(request.form.get('quantity', 0))
     unit = request.form.get('unit', 'PCS')
     packer_name = request.form.get('packer_name', '')
     pack_date = datetime.now().strftime("%Y-%m-%d")
-
-    manager.add_packing_before_seal(pack_date, packer_name, lot_number, quantity, unit)
+    success, message = manager.add_packing_before_seal(pack_date, packer_name, lot_number, quantity, unit)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+@app.route('/production/delete_packing/<int:record_id>', methods=['POST'])
+def delete_packing(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_packing_before_seal(record_id)
+    flash('✅ Packing record deleted!', 'success')
+    return redirect(url_for('production'))
+
+# Sealing - CRUD
 @app.route('/production/sealing', methods=['POST'])
 def production_sealing():
     if login_required():
         return redirect(url_for('login'))
-
     lot_number = request.form.get('lot_number', '')
     sealing_qty = int(request.form.get('sealing_qty', 0))
     packing_qty = int(request.form.get('packing_qty', 0))
     sealer_name = request.form.get('sealer_name', '')
     seal_date = datetime.now().strftime("%Y-%m-%d")
-
-    manager.add_sealing_record(seal_date, sealer_name, lot_number, sealing_qty, packing_qty)
+    success, message = manager.add_sealing_record(seal_date, sealer_name, lot_number, sealing_qty, packing_qty)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+@app.route('/production/delete_sealing/<int:record_id>', methods=['POST'])
+def delete_sealing(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_sealing_record(record_id)
+    flash('✅ Sealing record deleted!', 'success')
+    return redirect(url_for('production'))
+
+# Sterilization Entry - CRUD
 @app.route('/production/sterilization_entry', methods=['POST'])
 def sterilization_entry():
     if login_required():
         return redirect(url_for('login'))
-
     lot_number = request.form.get('lot_number', '')
     bag_quantity = int(request.form.get('bag_quantity', 0))
     pcs_quantity = int(request.form.get('pcs_quantity', 0))
     person_name = request.form.get('person_name', '')
     entry_date = datetime.now().strftime("%Y-%m-%d")
-
-    manager.add_sterilization_entry(entry_date, person_name, bag_quantity, pcs_quantity, lot_number)
+    success, message = manager.add_sterilization_entry(entry_date, person_name, bag_quantity, pcs_quantity, lot_number)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+@app.route('/production/delete_sterilization_entry/<int:record_id>', methods=['POST'])
+def delete_sterilization_entry(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_sterilization_entry(record_id)
+    flash('✅ Sterilization entry deleted!', 'success')
+    return redirect(url_for('production'))
+
+# Sterilization Start
 @app.route('/production/sterilization_start', methods=['POST'])
 def sterilization_start():
     if login_required():
         return redirect(url_for('login'))
-
     lot_number = request.form.get('lot_number', '')
     bag_quantity = int(request.form.get('bag_quantity', 0))
     pcs_quantity = int(request.form.get('pcs_quantity', 0))
     operator_name = request.form.get('operator_name', '')
     start_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    manager.add_sterilization_start(start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number)
+    success, message = manager.add_sterilization_start(start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+# Sterilization Finish
 @app.route('/production/sterilization_finish', methods=['POST'])
 def sterilization_finish():
     if login_required():
         return redirect(url_for('login'))
-
     lot_number = request.form.get('lot_number', '')
     bag_quantity = int(request.form.get('bag_quantity', 0))
     pcs_quantity = int(request.form.get('pcs_quantity', 0))
     operator_name = request.form.get('operator_name', '')
     finish_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    manager.add_sterilization_finish(finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number)
+    success, message = manager.add_sterilization_finish(finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+# Packing After Sterile - CRUD
 @app.route('/production/packing_after_sterile', methods=['POST'])
 def packing_after_sterile():
     if login_required():
         return redirect(url_for('login'))
-
     lot_number = request.form.get('lot_number', '')
     bag_quantity = int(request.form.get('bag_quantity', 0))
     pcs_quantity = int(request.form.get('pcs_quantity', 0))
     packer_name = request.form.get('packer_name', '')
     pack_date = datetime.now().strftime("%Y-%m-%d")
-
-    manager.add_packing_after_sterile(pack_date, packer_name, lot_number, bag_quantity, pcs_quantity)
+    success, message = manager.add_packing_after_sterile(pack_date, packer_name, lot_number, bag_quantity, pcs_quantity)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
+@app.route('/production/delete_pack_after/<int:record_id>', methods=['POST'])
+def delete_pack_after(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_packing_after_sterile(record_id)
+    flash('✅ Packing after sterile record deleted!', 'success')
+    return redirect(url_for('production'))
+
+# ============================================
+# HR ROUTES
+# ============================================
 @app.route('/hr')
 def hr():
     if login_required():
         return redirect(url_for('login'))
-
     employees = manager.get_all_employees()
     today = datetime.now().strftime("%Y-%m-%d")
     attendance = manager.get_attendance(today)
-
-    return render_template(
-        'hr.html',
-        active='hr',
-        employees=employees,
-        attendance=attendance
-    )
+    return render_template('hr.html', active='hr', employees=employees, attendance=attendance)
 
 @app.route('/hr/add_employee', methods=['POST'])
 def add_employee():
     if login_required():
         return redirect(url_for('login'))
-
     full_name = request.form.get('full_name', '')
     national_id = request.form.get('national_id', '')
     mobile1 = request.form.get('mobile1', '')
     mobile2 = request.form.get('mobile2', '')
     address = request.form.get('address', '')
     blood_group = request.form.get('blood_group', '')
+    success, message = manager.add_employee(full_name, national_id, mobile1, mobile2, address, blood_group, '')
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('hr'))
 
-    manager.add_employee(full_name, national_id, mobile1, mobile2, address, blood_group, '')
+@app.route('/hr/delete_employee/<employee_code>', methods=['POST'])
+def delete_employee(employee_code):
+    if login_required():
+        return redirect(url_for('login'))
+    success, message = manager.delete_employee(employee_code)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('hr'))
 
 @app.route('/hr/mark_attendance', methods=['POST'])
 def mark_attendance():
     if login_required():
         return redirect(url_for('login'))
-
     employee_code = request.form.get('employee_code', '')
     status = request.form.get('status', 'Present')
     today = datetime.now().strftime("%Y-%m-%d")
     check_in_time = datetime.now().strftime("%H:%M:%S")
-
-    manager.add_attendance(today, employee_code, check_in_time, status)
+    success, message = manager.add_attendance(today, employee_code, check_in_time, status)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('hr'))
 
+@app.route('/hr/attendance_by_date', methods=['GET'])
+def attendance_by_date():
+    if login_required():
+        return redirect(url_for('login'))
+    date = request.args.get('date', datetime.now().strftime("%Y-%m-%d"))
+    employees = manager.get_all_employees()
+    attendance = manager.get_attendance(date)
+    return render_template('hr.html', active='hr', employees=employees, attendance=attendance, selected_date=date)
+
+# ============================================
+# SALES ROUTES (FULL CRUD)
+# ============================================
+@app.route('/sales')
+def sales():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    customers = manager.get_all_customers()
+    orders = manager.get_all_orders()
+    invoices = manager.get_all_invoices()
+    products = manager.get_all_products()
+    now = datetime.now().strftime("%Y-%m-%d")
+    
+    return render_template(
+        'sales.html',
+        active='sales',
+        customers=customers,
+        orders=orders,
+        invoices=invoices,
+        products=products,
+        now=now
+    )
+
+# Customers - CRUD
+@app.route('/sales/add_customer', methods=['POST'])
+def add_customer():
+    if login_required():
+        return redirect(url_for('login'))
+    customer_name = request.form.get('customer_name', '')
+    email = request.form.get('email', '')
+    phone = request.form.get('phone', '')
+    address = request.form.get('address', '')
+    city = request.form.get('city', '')
+    country = request.form.get('country', '')
+    success, message = manager.add_customer(customer_name, email, phone, address, city, country)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/delete_customer/<customer_code>', methods=['POST'])
+def delete_customer(customer_code):
+    if login_required():
+        return redirect(url_for('login'))
+    success, message = manager.delete_customer(customer_code)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('sales'))
+
+# Orders - CRUD
+@app.route('/sales/create_order', methods=['POST'])
+def create_order():
+    if login_required():
+        return redirect(url_for('login'))
+    customer_code = request.form.get('customer_code', '')
+    order_date = request.form.get('order_date', '')
+    delivery_date = request.form.get('delivery_date', '')
+    notes = request.form.get('notes', '')
+    created_by = session['user']['full_name']
+    
+    items = []
+    item_names = request.form.getlist('item_name[]')
+    quantities = request.form.getlist('quantity[]')
+    prices = request.form.getlist('unit_price[]')
+    
+    for i in range(len(item_names)):
+        if item_names[i] and int(quantities[i]) > 0:
+            items.append({
+                'item_name': item_names[i],
+                'quantity': int(quantities[i]),
+                'unit_price': float(prices[i])
+            })
+    
+    success, message = manager.create_sales_order(customer_code, order_date, delivery_date, items, notes, created_by)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/update_status', methods=['POST'])
+def update_order_status():
+    if login_required():
+        return redirect(url_for('login'))
+    order_number = request.form.get('order_number', '')
+    status = request.form.get('status', '')
+    manager.update_order_status(order_number, status)
+    flash('✅ Order status updated!', 'success')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/delete_order/<order_number>', methods=['POST'])
+def delete_order(order_number):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_order(order_number)
+    flash('✅ Order deleted!', 'success')
+    return redirect(url_for('sales'))
+
+# Invoices - CRUD
+@app.route('/sales/create_invoice', methods=['POST'])
+def create_invoice():
+    if login_required():
+        return redirect(url_for('login'))
+    order_number = request.form.get('order_number', '')
+    invoice_date = request.form.get('invoice_date', datetime.now().strftime("%Y-%m-%d"))
+    due_date = request.form.get('due_date', '')
+    notes = request.form.get('notes', '')
+    success, message = manager.create_invoice(order_number, invoice_date, due_date, notes)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/record_payment', methods=['POST'])
+def record_payment():
+    if login_required():
+        return redirect(url_for('login'))
+    invoice_number = request.form.get('invoice_number', '')
+    amount = float(request.form.get('amount', 0))
+    if amount <= 0:
+        flash('❌ Payment amount must be greater than 0!', 'error')
+        return redirect(url_for('sales'))
+    manager.record_payment(invoice_number, amount)
+    flash('✅ Payment recorded successfully!', 'success')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/delete_invoice/<invoice_number>', methods=['POST'])
+def delete_invoice(invoice_number):
+    if login_required():
+        return redirect(url_for('login'))
+    # Add delete method to database
+    conn = sqlite3.connect('production.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM invoices WHERE invoice_number = ?", (invoice_number,))
+    conn.commit()
+    conn.close()
+    flash('✅ Invoice deleted!', 'success')
+    return redirect(url_for('sales'))
+
+# ============================================
+# REPORTS ROUTES
+# ============================================
 @app.route('/reports')
 def reports():
     if login_required():
@@ -533,11 +781,13 @@ def reports():
         selected_date=selected_date
     )
 
+# ============================================
+# SETTINGS ROUTES
+# ============================================
 @app.route('/settings')
 def settings():
     if login_required():
         return redirect(url_for('login'))
-
     return render_template('settings.html', active='settings')
 
 @app.route('/settings/apply', methods=['POST'])
@@ -559,43 +809,38 @@ def settings_apply():
         bg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         set_setting('background_image', filename)
 
-    flash('Settings applied.', 'success')
+    flash('✅ Settings applied!', 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings/remove_background', methods=['POST'])
 def settings_remove_background():
     if login_required():
         return redirect(url_for('login'))
-
     set_setting('background_image', '')
-    flash('Background image removed.', 'success')
+    flash('✅ Background image removed!', 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings/set_backup_folder', methods=['POST'])
 def settings_set_backup_folder():
     if login_required():
         return redirect(url_for('login'))
-
     set_setting('backup_folder', request.form.get('backup_folder', 'static/uploads'))
-    flash('Backup folder saved.', 'success')
+    flash('✅ Backup folder saved!', 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings/reset_appearance', methods=['POST'])
 def settings_reset_appearance():
     if login_required():
         return redirect(url_for('login'))
-
     for key, value in DEFAULT_SETTINGS.items():
         set_setting(key, value)
-
-    flash('Appearance reset to default.', 'success')
+    flash('✅ Appearance reset to default!', 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings/backup', methods=['POST'])
 def settings_backup():
     if login_required():
         return redirect(url_for('login'))
-
     import shutil
     settings_now = get_all_settings()
     backup_folder = settings_now.get('backup_folder', 'static/uploads')
@@ -603,137 +848,25 @@ def settings_backup():
     backup_name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
     backup_path = os.path.join(backup_folder, backup_name)
     shutil.copy2('production.db', backup_path)
-    flash(f'Backup created: {backup_path}', 'success')
+    flash(f'✅ Backup created: {backup_path}', 'success')
     return redirect(url_for('settings'))
 
 @app.route('/settings/restore', methods=['POST'])
 def settings_restore():
     if login_required():
         return redirect(url_for('login'))
-
     restore_file = request.files.get('restore_file')
     if not restore_file or not restore_file.filename.endswith('.db'):
-        flash('Please choose a valid .db backup file to restore.', 'error')
+        flash('❌ Please choose a valid .db backup file!', 'error')
         return redirect(url_for('settings'))
-
     import shutil
-    # Safety copy of the current database before overwriting, just in case
     shutil.copy2('production.db', 'production_before_restore.db')
     restore_file.save('production.db')
-    flash('Database restored. Please restart the app (Ctrl+C then python app.py) for it to take full effect.', 'success')
+    flash('✅ Database restored! Please restart the app.', 'success')
     return redirect(url_for('settings'))
 
+# ============================================
+# MAIN
+# ============================================
 if __name__ == '__main__':
     app.run(debug=True)
-
-# ============================================
-# SALES MODULE ROUTES
-# ============================================
-
-@app.route('/sales')
-def sales():
-    if login_required():
-        return redirect(url_for('login'))
-    
-    customers = manager.get_all_customers()
-    orders = manager.get_all_orders()
-    invoices = manager.get_all_invoices()
-    products = manager.get_all_products()
-    now = datetime.now().strftime("%Y-%m-%d")
-    
-    return render_template(
-        'sales.html',
-        active='sales',
-        customers=customers,
-        orders=orders,
-        invoices=invoices,
-        products=products,
-        now=now
-    )
-
-@app.route('/sales/add_customer', methods=['POST'])
-def add_customer():
-    if login_required():
-        return redirect(url_for('login'))
-    
-    customer_name = request.form.get('customer_name', '')
-    email = request.form.get('email', '')
-    phone = request.form.get('phone', '')
-    address = request.form.get('address', '')
-    city = request.form.get('city', '')
-    country = request.form.get('country', '')
-    
-    success, message = manager.add_customer(customer_name, email, phone, address, city, country)
-    flash(message, 'success' if success else 'error')
-    return redirect(url_for('sales'))
-
-@app.route('/sales/create_order', methods=['POST'])
-def create_order():
-    if login_required():
-        return redirect(url_for('login'))
-    
-    customer_code = request.form.get('customer_code', '')
-    order_date = request.form.get('order_date', '')
-    delivery_date = request.form.get('delivery_date', '')
-    notes = request.form.get('notes', '')
-    created_by = session['user']['full_name']
-    
-    # Parse items from form
-    items = []
-    item_names = request.form.getlist('item_name[]')
-    quantities = request.form.getlist('quantity[]')
-    prices = request.form.getlist('unit_price[]')
-    
-    for i in range(len(item_names)):
-        if item_names[i] and int(quantities[i]) > 0:
-            items.append({
-                'item_name': item_names[i],
-                'quantity': int(quantities[i]),
-                'unit_price': float(prices[i])
-            })
-    
-    success, message = manager.create_sales_order(customer_code, order_date, delivery_date, items, notes, created_by)
-    flash(message, 'success' if success else 'error')
-    return redirect(url_for('sales'))
-
-@app.route('/sales/update_status', methods=['POST'])
-def update_order_status():
-    if login_required():
-        return redirect(url_for('login'))
-    
-    order_number = request.form.get('order_number', '')
-    status = request.form.get('status', '')
-    
-    manager.update_order_status(order_number, status)
-    flash('✅ Order status updated!', 'success')
-    return redirect(url_for('sales'))
-
-@app.route('/sales/create_invoice', methods=['POST'])
-def create_invoice():
-    if login_required():
-        return redirect(url_for('login'))
-    
-    order_number = request.form.get('order_number', '')
-    invoice_date = request.form.get('invoice_date', datetime.now().strftime("%Y-%m-%d"))
-    due_date = request.form.get('due_date', '')
-    notes = request.form.get('notes', '')
-    
-    success, message = manager.create_invoice(order_number, invoice_date, due_date, notes)
-    flash(message, 'success' if success else 'error')
-    return redirect(url_for('sales'))
-
-@app.route('/sales/record_payment', methods=['POST'])
-def record_payment():
-    if login_required():
-        return redirect(url_for('login'))
-    
-    invoice_number = request.form.get('invoice_number', '')
-    amount = float(request.form.get('amount', 0))
-    
-    if amount <= 0:
-        flash('❌ Payment amount must be greater than 0!', 'error')
-        return redirect(url_for('sales'))
-    
-    manager.record_payment(invoice_number, amount)
-    flash('✅ Payment recorded successfully!', 'success')
-    return redirect(url_for('sales'))

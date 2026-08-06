@@ -533,3 +533,16 @@ class ProductionManager:
     
     def delete_packing_after_sterile(self, record_id):
         return self.db.delete_packing_after_sterile(record_id)
+
+    # ============================================
+# SALES - DELETE METHODS
+# ============================================
+def delete_customer(self, customer_code):
+    if self.db.delete_customer(customer_code):
+        return True, f"✅ Customer '{customer_code}' deleted!"
+    return False, "❌ Failed to delete customer"
+
+def delete_order(self, order_number):
+    if self.db.delete_order(order_number):
+        return True, f"✅ Order '{order_number}' deleted!"
+    return False, "❌ Failed to delete order"
