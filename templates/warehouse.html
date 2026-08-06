@@ -29,9 +29,23 @@
             <div class="card">
                 <h3>{{ tr('wh_supplier_list') }}</h3>
                 <table>
-                    <tr><th>{{ tr('wh_supplier_name') }}</th><th>{{ tr('wh_contact_person') }}</th><th>{{ tr('phone') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('wh_supplier_name') }}</th>
+                        <th>{{ tr('wh_contact_person') }}</th>
+                        <th>{{ tr('phone') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for s in suppliers %}
-                    <tr><td>{{ s[1] }}</td><td>{{ s[3] }}</td><td>{{ s[4] }}</td></tr>
+                    <tr>
+                        <td>{{ s[1] }}</td>
+                        <td>{{ s[3] }}</td>
+                        <td>{{ s[4] }}</td>
+                        <td>
+                            <form method="post" action="/warehouse/delete_supplier/{{ s[1] }}" style="display:inline;" onsubmit="return confirm('Delete this supplier?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -63,9 +77,25 @@
             <div class="card">
                 <h3>{{ tr('wh_raw_entries') }}</h3>
                 <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('wh_supplier_col') }}</th><th>{{ tr('wh_item_name') }}</th><th>{{ tr('quantity') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('wh_supplier_col') }}</th>
+                        <th>{{ tr('wh_item_name') }}</th>
+                        <th>{{ tr('quantity') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for r in raw_materials %}
-                    <tr><td>{{ r[3] }}</td><td>{{ r[1] }}</td><td>{{ r[5] }}</td><td>{{ r[6] }}</td></tr>
+                    <tr>
+                        <td>{{ r[3] }}</td>
+                        <td>{{ r[1] }}</td>
+                        <td>{{ r[5] }}</td>
+                        <td>{{ r[6] }}</td>
+                        <td>
+                            <form method="post" action="/warehouse/delete_raw_material/{{ r[0] }}" style="display:inline;" onsubmit="return confirm('Delete this entry?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -91,9 +121,21 @@
             <div class="card">
                 <h3>{{ tr('wh_product_list') }}</h3>
                 <table>
-                    <tr><th>{{ tr('wh_product_col') }}</th><th>{{ tr('unit') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('wh_product_col') }}</th>
+                        <th>{{ tr('unit') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for p in products %}
-                    <tr><td>{{ p[0] }}</td><td>{{ p[1] }}</td></tr>
+                    <tr>
+                        <td>{{ p[0] }}</td>
+                        <td>{{ p[1] }}</td>
+                        <td>
+                            <form method="post" action="/warehouse/delete_product/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this product?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -103,9 +145,17 @@
             <div class="card">
                 <h3>{{ tr('wh_stock') }}</h3>
                 <table>
-                    <tr><th>{{ tr('wh_item_name') }}</th><th>{{ tr('wh_quantity') }}</th><th>{{ tr('unit') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('wh_item_name') }}</th>
+                        <th>{{ tr('wh_quantity') }}</th>
+                        <th>{{ tr('unit') }}</th>
+                    </tr>
                     {% for s in stock_items %}
-                    <tr><td>{{ s[0] }}</td><td>{{ s[1] }}</td><td>{{ s[2] }}</td></tr>
+                    <tr>
+                        <td>{{ s[0] }}</td>
+                        <td>{{ s[1] }}</td>
+                        <td>{{ s[2] }}</td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>

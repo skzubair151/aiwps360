@@ -45,9 +45,27 @@
             <div class="card">
                 <h3>{{ tr('prod_transfer_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('wh_item_name') }}</th><th>{{ tr('quantity') }}</th><th>{{ tr('prod_received') }}</th><th>{{ tr('prod_issued') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('wh_item_name') }}</th>
+                        <th>{{ tr('quantity') }}</th>
+                        <th>{{ tr('prod_received') }}</th>
+                        <th>{{ tr('prod_issued') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for t in transfers %}
-                    <tr><td>{{ t[6] }}</td><td>{{ t[1] }}</td><td>{{ t[2] }}</td><td>{{ t[4] }}</td><td>{{ t[5] }}</td></tr>
+                    <tr>
+                        <td>{{ t[6] }}</td>
+                        <td>{{ t[1] }}</td>
+                        <td>{{ t[2] }}</td>
+                        <td>{{ t[4] }}</td>
+                        <td>{{ t[5] }}</td>
+                        <td>
+                            <form method="post" action="/production/delete_transfer/{{ t[0] }}" style="display:inline;" onsubmit="return confirm('Delete this transfer?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -75,9 +93,25 @@
             <div class="card">
                 <h3>{{ tr('prod_checking_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('wh_item_name') }}</th><th>{{ tr('quantity') }}</th><th>{{ tr('prod_checker') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('wh_item_name') }}</th>
+                        <th>{{ tr('quantity') }}</th>
+                        <th>{{ tr('prod_checker') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for c in checking_records %}
-                    <tr><td>{{ c[1] }}</td><td>{{ c[2] }}</td><td>{{ c[3] }}</td><td>{{ c[5] }}</td></tr>
+                    <tr>
+                        <td>{{ c[1] }}</td>
+                        <td>{{ c[2] }}</td>
+                        <td>{{ c[3] }}</td>
+                        <td>{{ c[5] }}</td>
+                        <td>
+                            <form method="post" action="/production/delete_checking/{{ c[0] }}" style="display:inline;" onsubmit="return confirm('Delete this checking record?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -101,9 +135,23 @@
             <div class="card">
                 <h3>{{ tr('prod_assembly_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_assembler_col') }}</th><th>{{ tr('quantity') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('prod_assembler_col') }}</th>
+                        <th>{{ tr('quantity') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for a in assembly_records %}
-                    <tr><td>{{ a[1] }}</td><td>{{ a[2] }}</td><td>{{ a[3] }}</td></tr>
+                    <tr>
+                        <td>{{ a[1] }}</td>
+                        <td>{{ a[2] }}</td>
+                        <td>{{ a[3] }}</td>
+                        <td>
+                            <form method="post" action="/production/delete_assembly/{{ a[0] }}" style="display:inline;" onsubmit="return confirm('Delete this assembly record?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -129,9 +177,25 @@
             <div class="card">
                 <h3>{{ tr('prod_packing_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_packer_col') }}</th><th>{{ tr('quantity') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('prod_lot_number') }}</th>
+                        <th>{{ tr('prod_packer_col') }}</th>
+                        <th>{{ tr('quantity') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for p in packing_records %}
-                    <tr><td>{{ p[1] }}</td><td>{{ p[3] }}</td><td>{{ p[2] }}</td><td>{{ p[4] }}</td></tr>
+                    <tr>
+                        <td>{{ p[1] }}</td>
+                        <td>{{ p[3] }}</td>
+                        <td>{{ p[2] }}</td>
+                        <td>{{ p[4] }}</td>
+                        <td>
+                            <form method="post" action="/production/delete_packing/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this packing record?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -155,9 +219,25 @@
             <div class="card">
                 <h3>{{ tr('prod_sealing_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_sealer_col') }}</th><th>{{ tr('prod_sealing_qty_col') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('prod_lot_number') }}</th>
+                        <th>{{ tr('prod_sealer_col') }}</th>
+                        <th>{{ tr('prod_sealing_qty_col') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for s in sealing_records %}
-                    <tr><td>{{ s[1] }}</td><td>{{ s[3] }}</td><td>{{ s[2] }}</td><td>{{ s[4] }}</td></tr>
+                    <tr>
+                        <td>{{ s[1] }}</td>
+                        <td>{{ s[3] }}</td>
+                        <td>{{ s[2] }}</td>
+                        <td>{{ s[4] }}</td>
+                        <td>
+                            <form method="post" action="/production/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this sealing record?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -181,9 +261,27 @@
             <div class="card">
                 <h3>{{ tr('prod_ster_entry_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_bag_qty') }}</th><th>{{ tr('prod_pcs_qty') }}</th><th>{{ tr('prod_person_name') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('prod_lot_number') }}</th>
+                        <th>{{ tr('prod_bag_qty') }}</th>
+                        <th>{{ tr('prod_pcs_qty') }}</th>
+                        <th>{{ tr('prod_person_name') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for e in sterilization_entries %}
-                    <tr><td>{{ e[1] }}</td><td>{{ e[5] }}</td><td>{{ e[3] }}</td><td>{{ e[4] }}</td><td>{{ e[2] }}</td></tr>
+                    <tr>
+                        <td>{{ e[1] }}</td>
+                        <td>{{ e[5] }}</td>
+                        <td>{{ e[3] }}</td>
+                        <td>{{ e[4] }}</td>
+                        <td>{{ e[2] }}</td>
+                        <td>
+                            <form method="post" action="/production/delete_sterilization_entry/{{ e[0] }}" style="display:inline;" onsubmit="return confirm('Delete this sterilization entry?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -207,9 +305,21 @@
             <div class="card">
                 <h3>{{ tr('prod_ster_start_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('prod_datetime') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_bag_qty') }}</th><th>{{ tr('prod_pcs_qty') }}</th><th>{{ tr('prod_operator_col') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('prod_datetime') }}</th>
+                        <th>{{ tr('prod_lot_number') }}</th>
+                        <th>{{ tr('prod_bag_qty') }}</th>
+                        <th>{{ tr('prod_pcs_qty') }}</th>
+                        <th>{{ tr('prod_operator_col') }}</th>
+                    </tr>
                     {% for s in sterilization_starts %}
-                    <tr><td>{{ s[1] }}</td><td>{{ s[5] }}</td><td>{{ s[3] }}</td><td>{{ s[4] }}</td><td>{{ s[2] }}</td></tr>
+                    <tr>
+                        <td>{{ s[1] }}</td>
+                        <td>{{ s[5] }}</td>
+                        <td>{{ s[3] }}</td>
+                        <td>{{ s[4] }}</td>
+                        <td>{{ s[2] }}</td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -233,9 +343,21 @@
             <div class="card">
                 <h3>{{ tr('prod_ster_finish_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('prod_datetime') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_bag_qty') }}</th><th>{{ tr('prod_pcs_qty') }}</th><th>{{ tr('prod_operator_col') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('prod_datetime') }}</th>
+                        <th>{{ tr('prod_lot_number') }}</th>
+                        <th>{{ tr('prod_bag_qty') }}</th>
+                        <th>{{ tr('prod_pcs_qty') }}</th>
+                        <th>{{ tr('prod_operator_col') }}</th>
+                    </tr>
                     {% for f in sterilization_finishes %}
-                    <tr><td>{{ f[1] }}</td><td>{{ f[5] }}</td><td>{{ f[3] }}</td><td>{{ f[4] }}</td><td>{{ f[2] }}</td></tr>
+                    <tr>
+                        <td>{{ f[1] }}</td>
+                        <td>{{ f[5] }}</td>
+                        <td>{{ f[3] }}</td>
+                        <td>{{ f[4] }}</td>
+                        <td>{{ f[2] }}</td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>
@@ -259,9 +381,27 @@
             <div class="card">
                 <h3>{{ tr('prod_pack_after_history') }}</h3>
                 <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('prod_lot_number') }}</th><th>{{ tr('prod_bag_qty') }}</th><th>{{ tr('prod_pcs_qty') }}</th><th>{{ tr('prod_packer_col') }}</th></tr>
+                    <tr>
+                        <th>{{ tr('date') }}</th>
+                        <th>{{ tr('prod_lot_number') }}</th>
+                        <th>{{ tr('prod_bag_qty') }}</th>
+                        <th>{{ tr('prod_pcs_qty') }}</th>
+                        <th>{{ tr('prod_packer_col') }}</th>
+                        <th>{{ tr('action') }}</th>
+                    </tr>
                     {% for p in packing_after_sterile %}
-                    <tr><td>{{ p[1] }}</td><td>{{ p[3] }}</td><td>{{ p[4] }}</td><td>{{ p[5] }}</td><td>{{ p[2] }}</td></tr>
+                    <tr>
+                        <td>{{ p[1] }}</td>
+                        <td>{{ p[3] }}</td>
+                        <td>{{ p[4] }}</td>
+                        <td>{{ p[5] }}</td>
+                        <td>{{ p[2] }}</td>
+                        <td>
+                            <form method="post" action="/production/delete_pack_after/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this packing after sterile record?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </table>
             </div>

@@ -15,19 +15,14 @@
                 <form method="post" action="/hr/add_employee">
                     <label>{{ tr('hr_full_name') }}</label>
                     <input type="text" name="full_name" required>
-                    
                     <label>{{ tr('hr_national_id') }}</label>
                     <input type="text" name="national_id">
-                    
                     <label>{{ tr('hr_mobile1') }}</label>
                     <input type="text" name="mobile1">
-                    
                     <label>{{ tr('hr_mobile2') }}</label>
                     <input type="text" name="mobile2">
-                    
                     <label>{{ tr('address') }}</label>
                     <input type="text" name="address">
-                    
                     <label>{{ tr('hr_blood_group') }}</label>
                     <select name="blood_group">
                         <option value="A+">A+</option>
@@ -39,11 +34,9 @@
                         <option value="O+">O+</option>
                         <option value="O-">O-</option>
                     </select>
-                    
                     <button type="submit">{{ tr('hr_register_btn') }}</button>
                 </form>
             </div>
-            
             <div class="card">
                 <h3>{{ tr('hr_employee_list') }}</h3>
                 <table>
@@ -52,6 +45,7 @@
                         <th>{{ tr('hr_full_name') }}</th>
                         <th>{{ tr('hr_mobile_col') }}</th>
                         <th>{{ tr('hr_blood_group') }}</th>
+                        <th>{{ tr('action') }}</th>
                     </tr>
                     {% for e in employees %}
                     <tr>
@@ -59,6 +53,11 @@
                         <td>{{ e[1] }}</td>
                         <td>{{ e[3] }}</td>
                         <td>{{ e[6] }}</td>
+                        <td>
+                            <form method="post" action="/hr/delete_employee/{{ e[0] }}" style="display:inline;" onsubmit="return confirm('Delete this employee?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
                     </tr>
                     {% endfor %}
                 </table>
@@ -71,26 +70,22 @@
                 <form method="post" action="/hr/mark_attendance">
                     <label>{{ tr('hr_employee') }}</label>
                     <select name="employee_code" required>
-                        <option value="">{{ tr('hr_select_emp') }}</option>
+                        <option value="">-- {{ tr('hr_select_emp') }} --</option>
                         {% for e in employees %}
                         <option value="{{ e[0] }}">{{ e[1] }} ({{ e[0] }})</option>
                         {% endfor %}
                     </select>
-                    
                     <label>{{ tr('status') }}</label>
                     <select name="status">
                         <option value="Present">{{ tr('hr_present') }}</option>
                         <option value="Absent">{{ tr('hr_absent') }}</option>
                         <option value="Leave">{{ tr('hr_leave') }}</option>
                     </select>
-                    
                     <label>{{ tr('remark') }}</label>
                     <input type="text" name="remark" placeholder="{{ tr('remark') }}">
-                    
                     <button type="submit">{{ tr('hr_mark_btn') }}</button>
                 </form>
             </div>
-            
             <div class="card">
                 <h3>{{ tr('hr_today_attendance') }}</h3>
                 <table>

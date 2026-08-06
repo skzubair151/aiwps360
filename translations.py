@@ -38,6 +38,7 @@ EN = {
     'save': 'Save',
     'reset_default': 'Reset to Default',
     'quantity': 'Quantity',
+    'action': 'Action',
 
     # Dashboard
     'dash_summary': '📊 Summary',
@@ -276,6 +277,7 @@ RU = {
     'save': 'Сохранить',
     'reset_default': 'По умолчанию',
     'quantity': 'Количество',
+    'action': 'Действие',
 
     # Dashboard
     'dash_summary': '📊 Сводка',

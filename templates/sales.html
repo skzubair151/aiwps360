@@ -17,26 +17,19 @@
                 <form method="post" action="/sales/add_customer">
                     <label>{{ tr('sales_customer_name') }}</label>
                     <input type="text" name="customer_name" required>
-                    
                     <label>{{ tr('sales_email') }}</label>
                     <input type="email" name="email">
-                    
                     <label>{{ tr('sales_phone') }}</label>
                     <input type="text" name="phone">
-                    
                     <label>{{ tr('address') }}</label>
                     <input type="text" name="address">
-                    
                     <label>{{ tr('sales_city') }}</label>
                     <input type="text" name="city">
-                    
                     <label>{{ tr('sales_country') }}</label>
                     <input type="text" name="country">
-                    
                     <button type="submit">{{ tr('sales_add_customer') }}</button>
                 </form>
             </div>
-            
             <div class="card">
                 <h3>{{ tr('sales_customer_list') }}</h3>
                 <table>
@@ -46,6 +39,7 @@
                         <th>{{ tr('sales_email') }}</th>
                         <th>{{ tr('sales_phone') }}</th>
                         <th>{{ tr('sales_city') }}</th>
+                        <th>{{ tr('action') }}</th>
                     </tr>
                     {% for c in customers %}
                     <tr>
@@ -54,6 +48,11 @@
                         <td>{{ c[2] }}</td>
                         <td>{{ c[3] }}</td>
                         <td>{{ c[5] }}</td>
+                        <td>
+                            <form method="post" action="/sales/delete_customer/{{ c[0] }}" style="display:inline;" onsubmit="return confirm('Delete this customer?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
+                        </td>
                     </tr>
                     {% endfor %}
                 </table>
@@ -72,13 +71,10 @@
                         <option value="{{ c[0] }}">{{ c[1] }} ({{ c[0] }})</option>
                         {% endfor %}
                     </select>
-                    
                     <label>{{ tr('sales_order_date') }}</label>
                     <input type="date" name="order_date" value="{{ now }}" required>
-                    
                     <label>{{ tr('sales_delivery_date') }}</label>
                     <input type="date" name="delivery_date">
-                    
                     <label>{{ tr('sales_items') }}</label>
                     <div id="order-items">
                         <div class="order-item" style="display:flex; gap:10px; margin-bottom:8px;">
@@ -90,19 +86,15 @@
                             </select>
                             <input type="number" name="quantity[]" placeholder="{{ tr('sales_quantity') }}" style="flex:1;" required>
                             <input type="number" name="unit_price[]" placeholder="{{ tr('sales_unit_price') }}" style="flex:1;" step="0.01" required>
-                            <button type="button" onclick="removeItem(this)" style="background:#c62828; width:40px;">✕</button>
+                            <button type="button" onclick="removeItem(this)" style="background:#c62828; width:40px; border:none; border-radius:3px; color:white; cursor:pointer;">✕</button>
                         </div>
                     </div>
-                    
-                    <button type="button" onclick="addItem()" style="background:#555; margin-bottom:12px;">+ {{ tr('sales_add_item') }}</button>
-                    
+                    <button type="button" onclick="addItem()" style="background:#555; margin-bottom:12px; border:none; border-radius:3px; color:white; padding:6px 12px; cursor:pointer;">+ {{ tr('sales_add_item') }}</button>
                     <label>{{ tr('sales_notes') }}</label>
                     <input type="text" name="notes">
-                    
                     <button type="submit">{{ tr('sales_create') }}</button>
                 </form>
             </div>
-            
             <div class="card">
                 <h3>{{ tr('sales_orders_list') }}</h3>
                 <table>
@@ -113,6 +105,7 @@
                         <th>{{ tr('sales_status') }}</th>
                         <th>{{ tr('sales_total') }}</th>
                         <th>{{ tr('sales_create_invoice') }}</th>
+                        <th>{{ tr('action') }}</th>
                     </tr>
                     {% for o in orders %}
                     <tr>
@@ -139,9 +132,14 @@
                                 <input type="hidden" name="invoice_date" value="{{ now }}">
                                 <input type="hidden" name="due_date" value="">
                                 <input type="hidden" name="notes" value="">
-                                <button type="submit" style="background:#43a047; padding:4px 8px; font-size:11px;">{{ tr('sales_create_invoice') }}</button>
+                                <button type="submit" style="background:#43a047; padding:4px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">{{ tr('sales_create_invoice') }}</button>
                             </form>
                             {% endif %}
+                        </td>
+                        <td>
+                            <form method="post" action="/sales/delete_order/{{ o[0] }}" style="display:inline;" onsubmit="return confirm('Delete this order?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -164,6 +162,7 @@
                         <th>{{ tr('sales_remaining') }}</th>
                         <th>{{ tr('sales_status') }}</th>
                         <th>{{ tr('sales_record_payment') }}</th>
+                        <th>{{ tr('action') }}</th>
                     </tr>
                     {% for inv in invoices %}
                     <tr>
@@ -180,11 +179,16 @@
                             <form method="post" action="/sales/record_payment" style="display:flex; gap:5px;">
                                 <input type="hidden" name="invoice_number" value="{{ inv[0] }}">
                                 <input type="number" name="amount" placeholder="Amount" style="width:80px; padding:2px 4px;" step="0.01" required>
-                                <button type="submit" style="background:#43a047; padding:2px 8px; font-size:11px;">Pay</button>
+                                <button type="submit" style="background:#43a047; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">Pay</button>
                             </form>
                             {% else %}
                             ✓ {{ tr('sales_paid_amount') }}
                             {% endif %}
+                        </td>
+                        <td>
+                            <form method="post" action="/sales/delete_invoice/{{ inv[0] }}" style="display:inline;" onsubmit="return confirm('Delete this invoice?')">
+                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
@@ -196,22 +200,21 @@
 </div>
 
 <script>
-// Add item row to order form
 function addItem() {
     var container = document.getElementById('order-items');
     var item = document.createElement('div');
     item.className = 'order-item';
     item.style.cssText = 'display:flex; gap:10px; margin-bottom:8px;';
     item.innerHTML = `
-        <select name="item_name[]" style="flex:2;" required>
+        <select name="item_name[]" style="flex:2; padding:6px 10px; border:1px solid #ddd; border-radius:4px;" required>
             <option value="">{{ tr('sales_item_name') }}</option>
             {% for p in products %}
             <option value="{{ p[0] }}">{{ p[0] }}</option>
             {% endfor %}
         </select>
-        <input type="number" name="quantity[]" placeholder="{{ tr('sales_quantity') }}" style="flex:1;" required>
-        <input type="number" name="unit_price[]" placeholder="{{ tr('sales_unit_price') }}" style="flex:1;" step="0.01" required>
-        <button type="button" onclick="removeItem(this)" style="background:#c62828; width:40px;">✕</button>
+        <input type="number" name="quantity[]" placeholder="{{ tr('sales_quantity') }}" style="flex:1; padding:6px 10px; border:1px solid #ddd; border-radius:4px;" required>
+        <input type="number" name="unit_price[]" placeholder="{{ tr('sales_unit_price') }}" style="flex:1; padding:6px 10px; border:1px solid #ddd; border-radius:4px;" step="0.01" required>
+        <button type="button" onclick="removeItem(this)" style="background:#c62828; width:40px; border:none; border-radius:3px; color:white; cursor:pointer;">✕</button>
     `;
     container.appendChild(item);
 }
@@ -225,7 +228,6 @@ function removeItem(btn) {
     }
 }
 
-// Sidebar tabs
 (function() {
     var sidebar = document.getElementById('sales-sidebar');
     var buttons = sidebar.querySelectorAll('button');
@@ -240,13 +242,5 @@ function removeItem(btn) {
     });
 })();
 </script>
-
-<style>
-.order-item select, .order-item input {
-    padding: 6px 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-</style>
 
 {% endblock %}
