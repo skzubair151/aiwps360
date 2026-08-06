@@ -50,13 +50,14 @@
             </div>
 
             <nav class="main-sidebar-nav">
-                <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">📊 <span>{{ tr('nav_dashboard') }}</span></a>
-                <a href="/warehouse" class="{% if active == 'warehouse' %}active{% endif %}">🏢 <span>{{ tr('nav_warehouse') }}</span></a>
-                <a href="/production" class="{% if active == 'production' %}active{% endif %}">🏭 <span>{{ tr('nav_production') }}</span></a>
-                <a href="/hr" class="{% if active == 'hr' %}active{% endif %}">👥 <span>{{ tr('nav_hr') }}</span></a>
-                <a href="/reports" class="{% if active == 'reports' %}active{% endif %}">📈 <span>{{ tr('nav_reports') }}</span></a>
-                <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">⚙️ <span>{{ tr('nav_settings') }}</span></a>
-            </nav>
+    <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">📊 <span>{{ tr('nav_dashboard') }}</span></a>
+    <a href="/warehouse" class="{% if active == 'warehouse' %}active{% endif %}">🏢 <span>{{ tr('nav_warehouse') }}</span></a>
+    <a href="/production" class="{% if active == 'production' %}active{% endif %}">🏭 <span>{{ tr('nav_production') }}</span></a>
+    <a href="/hr" class="{% if active == 'hr' %}active{% endif %}">👥 <span>{{ tr('nav_hr') }}</span></a>
+    <a href="/sales" class="{% if active == 'sales' %}active{% endif %}">💰 <span>{{ tr('nav_sales') }}</span></a>
+    <a href="/reports" class="{% if active == 'reports' %}active{% endif %}">📈 <span>{{ tr('nav_reports') }}</span></a>
+    <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">⚙️ <span>{{ tr('nav_settings') }}</span></a>
+</nav>
 
             <div class="main-sidebar-user">
                 <div class="main-sidebar-username">{{ session['user']['full_name'] }}</div>
@@ -88,4 +89,3 @@
     </div>
 </body>
 </html>
-<a href="/sales" class="{% if active == 'sales' %}active{% endif %}">💰 <span>{{ tr('nav_sales') }}</span></a>
