@@ -269,3 +269,104 @@
         </table>
     </div>
 </div>
+<!-- Sealing Panel -->
+<div class="dept-panel" id="iv-sealing">
+    <div class="card">
+        <h3>🔒 Seal IV Sets (Multi Pack)</h3>
+        <p style="color:#555; margin-bottom:12px;">
+            <strong>1 Bag = {{ multi_packs_per_bag }} Multi Packs</strong><br>
+            <strong>1 Multi Pack = {{ sets_per_multi_pack }} IV Sets</strong>
+        </p>
+        <form method="post" action="/iv_set/seal" id="seal-form">
+            <label>Select LOT to Seal</label>
+            <select name="lot_number" required>
+                <option value="">-- Select Pending LOT --</option>
+                {% for l in pending_lots %}
+                <option value="{{ l[0] }}">{{ l[0] }} ({{ l[1] }} sets)</option>
+                {% endfor %}
+            </select>
+            
+            <label>Bag Quantity</label>
+            <input type="number" name="bag_quantity" id="bag_quantity" value="1" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+            
+            <div style="display:flex; gap:15px;">
+                <div style="flex:1;">
+                    <label>Multi Packs per Bag</label>
+                    <input type="number" name="multi_packs_per_bag" id="multi_packs_per_bag" value="6" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                </div>
+                <div style="flex:1;">
+                    <label>Sets per Multi Pack</label>
+                    <input type="number" name="sets_per_multi_pack" id="sets_per_multi_pack" value="50" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                </div>
+            </div>
+            
+            <div style="background:#f5f5f5; padding:12px; border-radius:4px; margin:8px 0;">
+                <div style="display:flex; gap:20px; justify-content:space-around;">
+                    <div><strong>Bags:</strong> <span id="display_bags">1</span></div>
+                    <div><strong>Multi Packs:</strong> <span id="display_multi_packs">6</span></div>
+                    <div><strong>Total PCS:</strong> <span id="display_pcs">300</span></div>
+                </div>
+            </div>
+            
+            <label>Sealer Name</label>
+            <input type="text" name="sealer_name" required>
+            
+            <button type="submit">Seal & Create Multi Packs</button>
+        </form>
+        <p style="color:#555; margin-top:8px; font-size:12px;">⚠️ This will automatically deduct Multi Pack Poly from warehouse stock.</p>
+    </div>
+    <div class="card">
+        <h3>📜 Sealing History</h3>
+        <table>
+            <tr>
+                <th>Date</th>
+                <th>LOT</th>
+                <th>Bags</th>
+                <th>Multi Packs/Bag</th>
+                <th>Total Multi Packs</th>
+                <th>Sets/Pack</th>
+                <th>Total PCS</th>
+                <th>Sealer</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            {% for s in sealing_records %}
+            <tr>
+                <td>{{ s[1] }}</td>
+                <td>{{ s[2] }}</td>
+                <td>{{ s[3] }}</td>
+                <td>{{ s[4] }}</td>
+                <td>{{ s[5] }}</td>
+                <td>{{ s[6] }}</td>
+                <td>{{ s[7] }}</td>
+                <td>{{ s[8] }}</td>
+                <td>{{ s[9] }}</td>
+                <td>
+                    <form method="post" action="/iv_set/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
+                        <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+<script>
+function calculateSealing() {
+    var bags = parseInt(document.getElementById('bag_quantity').value) || 0;
+    var multiPerBag = parseInt(document.getElementById('multi_packs_per_bag').value) || 0;
+    var setsPerPack = parseInt(document.getElementById('sets_per_multi_pack').value) || 0;
+    
+    var multiPacks = bags * multiPerBag;
+    var totalPcs = multiPacks * setsPerPack;
+    
+    document.getElementById('display_bags').textContent = bags;
+    document.getElementById('display_multi_packs').textContent = multiPacks;
+    document.getElementById('display_pcs').textContent = totalPcs;
+}
+
+// Calculate on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateSealing();
+});
+</script>

@@ -709,3 +709,45 @@ def seal_iv_sets(self, lot_number, sets_per_pack, sealer_name):
     self.db.add_iv_set_sealing(seal_date, lot_number, multi_pack_qty, sets_per_pack, total_sets, sealer_name)
     self.db.update_packing_status(lot_number, 'Sealed')
     return True, f"✅ {multi_pack_qty} Multi Packs created from LOT {lot_number} ({total_sets} IV Sets)"
+# ============================================
+# IV SET - SEALING (Updated with Bags)
+# ============================================
+def seal_iv_sets(self, lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name):
+    if not lot_number:
+        return False, "LOT number cannot be empty"
+    if bag_quantity <= 0:
+        return False, "Bag quantity must be greater than 0"
+    if multi_packs_per_bag <= 0:
+        return False, "Multi packs per bag must be greater than 0"
+    if sets_per_multi_pack <= 0:
+        return False, "Sets per multi pack must be greater than 0"
+    if not sealer_name or sealer_name.strip() == '':
+        return False, "Sealer name cannot be empty"
+    
+    # Get packing details
+    records = self.db.get_iv_set_packing_records()
+    pack_record = None
+    for r in records:
+        if r[5] == lot_number:
+            pack_record = r
+            break
+    
+    if not pack_record:
+        return False, f"❌ LOT {lot_number} not found!"
+    
+    total_multi_packs = bag_quantity * multi_packs_per_bag
+    total_sets = total_multi_packs * sets_per_multi_pack
+    
+    # Check Multi Pack Poly stock
+    available, unit = self.db.get_item_quantity('Multi Pack Poly')
+    if available < total_multi_packs:
+        return False, f"❌ Not enough Multi Pack Poly! Available: {available}, Required: {total_multi_packs}"
+    
+    seal_date = datetime.now().strftime("%Y-%m-%d")
+    self.db.add_iv_set_sealing(seal_date, lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name)
+    self.db.update_packing_status(lot_number, 'Sealed')
+    
+    return True, f"✅ {bag_quantity} Bags ({total_multi_packs} Multi Packs = {total_sets} PCS) sealed from LOT {lot_number}"
+
+def get_iv_set_sealing_records(self):
+    return self.db.get_iv_set_sealing_records()
