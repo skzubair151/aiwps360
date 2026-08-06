@@ -1,4 +1,4 @@
-# PART 2: BUSINESS LOGIC LAYER (COMPLETE)
+# PART 2: BUSINESS LOGIC LAYER (COMPLETE - WITH SALES MODULE)
 from database import Database
 from datetime import datetime, timedelta
 
@@ -407,6 +407,105 @@ class ProductionManager:
     def get_sterilized_goods_report(self):
         """Get sterilized goods report"""
         return self.db.get_sterilized_goods_report()
+    
+    # ============================================
+    # SALES - CUSTOMERS
+    # ============================================
+    def add_customer(self, customer_name, email, phone, address, city, country):
+        if not customer_name or customer_name.strip() == '':
+            return False, "Customer name cannot be empty"
+        
+        customer_code = self.db.get_next_customer_code()
+        customer_name = customer_name.strip().title()
+        
+        if self.db.add_customer(customer_code, customer_name, email, phone, address, city, country):
+            return True, f"✅ Customer '{customer_name}' added with code {customer_code}"
+        return False, "❌ Failed to add customer"
+
+    def get_all_customers(self):
+        return self.db.get_all_customers()
+
+    def get_customer_by_code(self, customer_code):
+        return self.db.get_customer_by_code(customer_code)
+
+    def delete_customer(self, customer_code):
+        if self.db.delete_customer(customer_code):
+            return True, f"✅ Customer '{customer_code}' deleted!"
+        return False, "❌ Failed to delete customer"
+
+    # ============================================
+    # SALES - ORDERS
+    # ============================================
+    def create_sales_order(self, customer_code, order_date, delivery_date, items, notes, created_by):
+        if not customer_code:
+            return False, "Customer code cannot be empty"
+        if not items or len(items) == 0:
+            return False, "At least one item is required"
+        
+        order_number = self.db.get_next_order_number()
+        status = 'Pending'
+        
+        # Add order
+        self.db.add_sales_order(order_number, customer_code, order_date, delivery_date, status, notes, created_by)
+        
+        # Add items and calculate total
+        total_amount = 0
+        for item in items:
+            item_name = item.get('item_name')
+            quantity = item.get('quantity', 0)
+            unit_price = item.get('unit_price', 0)
+            total_price = quantity * unit_price
+            total_amount += total_price
+            self.db.add_sales_order_item(order_number, item_name, quantity, unit_price, total_price)
+        
+        # Update order total
+        self.db.update_order_total(order_number, total_amount)
+        
+        return True, f"✅ Order {order_number} created successfully!"
+
+    def get_all_orders(self):
+        return self.db.get_all_orders()
+
+    def get_order_details(self, order_number):
+        return self.db.get_order_by_number(order_number)
+
+    def update_order_status(self, order_number, status):
+        return self.db.update_order_status(order_number, status)
+
+    def delete_order(self, order_number):
+        return self.db.delete_order(order_number)
+
+    # ============================================
+    # SALES - INVOICES
+    # ============================================
+    def create_invoice(self, order_number, invoice_date, due_date, notes):
+        # Get order details
+        order, items = self.db.get_order_by_number(order_number)
+        if not order:
+            return False, "Order not found"
+        
+        customer_code = order[2]
+        total_amount = order[6]
+        
+        invoice_number = self.db.get_next_invoice_number()
+        status = 'Unpaid'
+        paid_amount = 0
+        
+        self.db.add_invoice(invoice_number, order_number, customer_code, invoice_date, due_date, total_amount, paid_amount, status, notes)
+        
+        # Update order status to Invoiced
+        self.db.update_order_status(order_number, 'Invoiced')
+        
+        return True, f"✅ Invoice {invoice_number} created successfully!"
+
+    def get_all_invoices(self):
+        return self.db.get_all_invoices()
+
+    def record_payment(self, invoice_number, amount):
+        return self.db.update_invoice_payment(invoice_number, amount)
+
+    def get_invoice_by_number(self, invoice_number):
+        return self.db.get_invoice_by_number(invoice_number)
     
     # ============================================
     # DELETE RECORDS

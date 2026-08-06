@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="dept-layout">
+    <div class="dept-sidebar" id="sales-sidebar">
+        <button data-target="s-customers" class="active">{{ tr('sales_customers') }}</button>
+        <button data-target="s-orders">{{ tr('sales_orders') }}</button>
+        <button data-target="s-invoices">{{ tr('sales_invoices') }}</button>
+    </div>
+
+    <div class="dept-content">
+
+        <!-- Customers Panel -->
+        <div class="dept-panel active" id="s-customers">
+            <div class="card">
+                <h3>{{ tr('sales_add_customer') }}</h3>
+                <form method="post" action="/sales/add_customer">
+                    <label>{{ tr('sales_customer_name') }}</label>
+                    <input type="text" name="customer_name" required>
+                    
+                    <label>{{ tr('sales_email') }}</label>
+                    <input type="email" name="email">
+                    
+                    <label>{{ tr('sales_phone') }}</label>
+                    <input type="text" name="phone">
+                    
+                    <label>{{ tr('address') }}</label>
+                    <input type="text" name="address">
+                    
+                    <label>{{ tr('sales_city') }}</label>
+                    <input type="text" name="city">
+                    
+                    <label>{{ tr('sales_country') }}</label>
+                    <input type="text" name="country">
+                    
+                    <button type="submit">{{ tr('sales_add_customer') }}</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>{{ tr('sales_customer_list') }}</h3>
+                <table>
+                    <tr>
+                        <th>{{ tr('sales_customer_code') }}</th>
+                        <th>{{ tr('sales_customer_name') }}</th>
+                        <th>{{ tr('sales_email') }}</th>
+                        <th>{{ tr('sales_phone') }}</th>
+                        <th>{{ tr('sales_city') }}</th>
+                    </tr>
+                    {% for c in customers %}
+                    <tr>
+                        <td>{{ c[0] }}</td>
+                        <td>{{ c[1] }}</td>
+                        <td>{{ c[2] }}</td>
+                        <td>{{ c[3] }}</td>
+                        <td>{{ c[5] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Orders Panel -->
+        <div class="dept-panel" id="s-orders">
+            <div class="card">
+                <h3>{{ tr('sales_create_order') }}</h3>
+                <form method="post" action="/sales/create_order" id="order-form">
+                    <label>{{ tr('sales_customer') }}</label>
+                    <select name="customer_code" required>
+                        <option value="">{{ tr('sales_customer') }}</option>
+                        {% for c in customers %}
+                        <option value="{{ c[0] }}">{{ c[1] }} ({{ c[0] }})</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <label>{{ tr('sales_order_date') }}</label>
+                    <input type="date" name="order_date" value="{{ now }}" required>
+                    
+                    <label>{{ tr('sales_delivery_date') }}</label>
+                    <input type="date" name="delivery_date">
+                    
+                    <label>{{ tr('sales_items') }}</label>
+                    <div id="order-items">
+                        <div class="order-item" style="display:flex; gap:10px; margin-bottom:8px;">
+                            <select name="item_name[]" style="flex:2;" required>
+                                <option value="">{{ tr('sales_item_name') }}</option>
+                                {% for p in products %}
+                                <option value="{{ p[0] }}">{{ p[0] }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="quantity[]" placeholder="{{ tr('sales_quantity') }}" style="flex:1;" required>
+                            <input type="number" name="unit_price[]" placeholder="{{ tr('sales_unit_price') }}" style="flex:1;" step="0.01" required>
+                            <button type="button" onclick="removeItem(this)" style="background:#c62828; width:40px;">✕</button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="addItem()" style="background:#555; margin-bottom:12px;">+ {{ tr('sales_add_item') }}</button>
+                    
+                    <label>{{ tr('sales_notes') }}</label>
+                    <input type="text" name="notes">
+                    
+                    <button type="submit">{{ tr('sales_create') }}</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>{{ tr('sales_orders_list') }}</h3>
+                <table>
+                    <tr>
+                        <th>{{ tr('sales_order_number') }}</th>
+                        <th>{{ tr('sales_customer') }}</th>
+                        <th>{{ tr('sales_order_date') }}</th>
+                        <th>{{ tr('sales_status') }}</th>
+                        <th>{{ tr('sales_total') }}</th>
+                        <th>{{ tr('sales_create_invoice') }}</th>
+                    </tr>
+                    {% for o in orders %}
+                    <tr>
+                        <td>{{ o[0] }}</td>
+                        <td>{{ o[1] }}</td>
+                        <td>{{ o[2] }}</td>
+                        <td>
+                            <form method="post" action="/sales/update_status" style="display:inline;">
+                                <input type="hidden" name="order_number" value="{{ o[0] }}">
+                                <select name="status" onchange="this.form.submit()">
+                                    <option value="Pending" {% if o[4] == 'Pending' %}selected{% endif %}>Pending</option>
+                                    <option value="Processing" {% if o[4] == 'Processing' %}selected{% endif %}>Processing</option>
+                                    <option value="Invoiced" {% if o[4] == 'Invoiced' %}selected{% endif %}>Invoiced</option>
+                                    <option value="Completed" {% if o[4] == 'Completed' %}selected{% endif %}>Completed</option>
+                                    <option value="Cancelled" {% if o[4] == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                </select>
+                            </form>
+                        </td>
+                        <td>${{ "%.2f"|format(o[5]) }}</td>
+                        <td>
+                            {% if o[4] != 'Invoiced' and o[4] != 'Completed' and o[4] != 'Cancelled' %}
+                            <form method="post" action="/sales/create_invoice" style="display:inline;">
+                                <input type="hidden" name="order_number" value="{{ o[0] }}">
+                                <input type="hidden" name="invoice_date" value="{{ now }}">
+                                <input type="hidden" name="due_date" value="">
+                                <input type="hidden" name="notes" value="">
+                                <button type="submit" style="background:#43a047; padding:4px 8px; font-size:11px;">{{ tr('sales_create_invoice') }}</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Invoices Panel -->
+        <div class="dept-panel" id="s-invoices">
+            <div class="card">
+                <h3>{{ tr('sales_invoices') }}</h3>
+                <table>
+                    <tr>
+                        <th>{{ tr('sales_invoice_number') }}</th>
+                        <th>{{ tr('sales_order_number') }}</th>
+                        <th>{{ tr('sales_customer') }}</th>
+                        <th>{{ tr('sales_invoice_date') }}</th>
+                        <th>{{ tr('sales_total') }}</th>
+                        <th>{{ tr('sales_paid_amount') }}</th>
+                        <th>{{ tr('sales_remaining') }}</th>
+                        <th>{{ tr('sales_status') }}</th>
+                        <th>{{ tr('sales_record_payment') }}</th>
+                    </tr>
+                    {% for inv in invoices %}
+                    <tr>
+                        <td>{{ inv[0] }}</td>
+                        <td>{{ inv[1] }}</td>
+                        <td>{{ inv[2] }}</td>
+                        <td>{{ inv[3] }}</td>
+                        <td>${{ "%.2f"|format(inv[5]) }}</td>
+                        <td>${{ "%.2f"|format(inv[6]) }}</td>
+                        <td>${{ "%.2f"|format(inv[5] - inv[6]) }}</td>
+                        <td>{{ inv[7] }}</td>
+                        <td>
+                            {% if inv[7] == 'Unpaid' or inv[7] == 'Partial' %}
+                            <form method="post" action="/sales/record_payment" style="display:flex; gap:5px;">
+                                <input type="hidden" name="invoice_number" value="{{ inv[0] }}">
+                                <input type="number" name="amount" placeholder="Amount" style="width:80px; padding:2px 4px;" step="0.01" required>
+                                <button type="submit" style="background:#43a047; padding:2px 8px; font-size:11px;">Pay</button>
+                            </form>
+                            {% else %}
+                            ✓ {{ tr('sales_paid_amount') }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// Add item row to order form
+function addItem() {
+    var container = document.getElementById('order-items');
+    var item = document.createElement('div');
+    item.className = 'order-item';
+    item.style.cssText = 'display:flex; gap:10px; margin-bottom:8px;';
+    item.innerHTML = `
+        <select name="item_name[]" style="flex:2;" required>
+            <option value="">{{ tr('sales_item_name') }}</option>
+            {% for p in products %}
+            <option value="{{ p[0] }}">{{ p[0] }}</option>
+            {% endfor %}
+        </select>
+        <input type="number" name="quantity[]" placeholder="{{ tr('sales_quantity') }}" style="flex:1;" required>
+        <input type="number" name="unit_price[]" placeholder="{{ tr('sales_unit_price') }}" style="flex:1;" step="0.01" required>
+        <button type="button" onclick="removeItem(this)" style="background:#c62828; width:40px;">✕</button>
+    `;
+    container.appendChild(item);
+}
+
+function removeItem(btn) {
+    var items = document.querySelectorAll('.order-item');
+    if (items.length > 1) {
+        btn.parentElement.remove();
+    } else {
+        alert('At least one item is required!');
+    }
+}
+
+// Sidebar tabs
+(function() {
+    var sidebar = document.getElementById('sales-sidebar');
+    var buttons = sidebar.querySelectorAll('button');
+    var panels = document.querySelectorAll('.dept-panel');
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('active'); });
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+        });
+    });
+})();
+</script>
+
+<style>
+.order-item select, .order-item input {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+</style>
+
+{% endblock %}

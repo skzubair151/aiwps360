@@ -1,4 +1,4 @@
-# PART 1: DATABASE LAYER (COMPLETE - WITH USERS)
+# PART 1: DATABASE LAYER (COMPLETE - WITH USERS + SALES MODULE)
 import sqlite3
 from datetime import datetime
 import hashlib
@@ -261,7 +261,7 @@ class Database:
         ''')
         
         # ============================================
-        # NEW: USERS TABLE
+        # USERS TABLE
         # ============================================
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -276,9 +276,105 @@ class Database:
             )
         ''')
         
+        # ============================================
+        # SALES MODULE TABLES
+        # ============================================
+        
+        # 18. Customers
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS customers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_code TEXT UNIQUE NOT NULL,
+                customer_name TEXT NOT NULL,
+                email TEXT,
+                phone TEXT,
+                address TEXT,
+                city TEXT,
+                country TEXT,
+                created_date TEXT NOT NULL,
+                status TEXT DEFAULT 'Active'
+            )
+        ''')
+        
+        # 19. Sales Orders
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sales_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_number TEXT UNIQUE NOT NULL,
+                customer_code TEXT NOT NULL,
+                order_date TEXT NOT NULL,
+                delivery_date TEXT,
+                status TEXT DEFAULT 'Pending',
+                total_amount REAL DEFAULT 0,
+                notes TEXT,
+                created_by TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (customer_code) REFERENCES customers(customer_code)
+            )
+        ''')
+        
+        # 20. Sales Order Items
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sales_order_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_number TEXT NOT NULL,
+                item_name TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                unit_price REAL NOT NULL,
+                total_price REAL NOT NULL,
+                FOREIGN KEY (order_number) REFERENCES sales_orders(order_number)
+            )
+        ''')
+        
+        # 21. Invoices
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS invoices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_number TEXT UNIQUE NOT NULL,
+                order_number TEXT NOT NULL,
+                customer_code TEXT NOT NULL,
+                invoice_date TEXT NOT NULL,
+                due_date TEXT,
+                total_amount REAL DEFAULT 0,
+                paid_amount REAL DEFAULT 0,
+                status TEXT DEFAULT 'Unpaid',
+                notes TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (order_number) REFERENCES sales_orders(order_number),
+                FOREIGN KEY (customer_code) REFERENCES customers(customer_code)
+            )
+        ''')
+        
+        # 22. Customer Counter
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS customer_counter (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_number INTEGER DEFAULT 0
+            )
+        ''')
+        
+        # 23. Order Counter
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS order_counter (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_number INTEGER DEFAULT 0
+            )
+        ''')
+        
+        # 24. Invoice Counter
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS invoice_counter (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_number INTEGER DEFAULT 0
+            )
+        ''')
+        
         # Insert default settings
         cursor.execute("INSERT OR IGNORE INTO system_settings (setting_key, setting_value) VALUES ('language', 'EN')")
         cursor.execute("INSERT OR IGNORE INTO employee_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO customer_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO order_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO invoice_counter (id, last_number) VALUES (1, 0)")
         
         conn.commit()
         conn.close()
@@ -309,9 +405,7 @@ class Database:
                 (product,)
             )
         
-        # ============================================
-        # NEW: DEFAULT ADMIN USER
-        # ============================================
+        # Default admin user
         cursor.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()[0] == 0:
             today = datetime.now().strftime("%Y-%m-%d")
@@ -320,6 +414,12 @@ class Database:
                 "INSERT INTO users (username, password, full_name, role, created_date) VALUES (?, ?, ?, ?, ?)",
                 ('admin', hashed, 'Administrator', 'Admin', today)
             )
+        
+        # Default counters
+        cursor.execute("INSERT OR IGNORE INTO employee_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO customer_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO order_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO invoice_counter (id, last_number) VALUES (1, 0)")
         
         conn.commit()
         conn.close()
@@ -395,7 +495,7 @@ class Database:
         return result
     
     # ============================================
-    # ALL OTHER METHODS (Keep existing)
+    # PRODUCTS
     # ============================================
     def add_product(self, product_name, unit='PCS'):
         today = datetime.now().strftime("%Y-%m-%d")
@@ -433,6 +533,9 @@ class Database:
         conn.close()
         return True
     
+    # ============================================
+    # SUPPLIERS
+    # ============================================
     def add_supplier(self, supplier_name, supplier_address='', contact_person='', phone=''):
         today = datetime.now().strftime("%Y-%m-%d")
         conn = sqlite3.connect(self.db_name)
@@ -473,6 +576,9 @@ class Database:
         conn.close()
         return True
     
+    # ============================================
+    # RAW MATERIAL
+    # ============================================
     def add_raw_material_entry(self, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, received_by):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -498,6 +604,9 @@ class Database:
         conn.close()
         return results
     
+    # ============================================
+    # WAREHOUSE STOCK
+    # ============================================
     def get_warehouse_stock(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -524,6 +633,9 @@ class Database:
         conn.commit()
         conn.close()
     
+    # ============================================
+    # PRODUCTION - TRANSFER
+    # ============================================
     def add_warehouse_to_production(self, item_name, quantity, unit, received_by, issued_by, transfer_date, remark=''):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -547,6 +659,9 @@ class Database:
         conn.close()
         return results
     
+    # ============================================
+    # PRODUCTION - CHECKING
+    # ============================================
     def add_checking_record(self, check_date, item_name, quantity, unit, checker_name, remark=''):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -566,6 +681,9 @@ class Database:
         conn.close()
         return results
     
+    # ============================================
+    # PRODUCTION - ASSEMBLY
+    # ============================================
     def add_assembly_record(self, assembly_date, assembler_name, quantity, unit='PCS', remark=''):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -594,6 +712,9 @@ class Database:
         conn.close()
         return result if result else 0
     
+    # ============================================
+    # PRODUCTION - PACKING BEFORE SEAL
+    # ============================================
     def add_packing_before_seal(self, pack_date, packer_name, lot_number, quantity, unit):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -629,6 +750,9 @@ class Database:
         conn.close()
         return result
     
+    # ============================================
+    # PRODUCTION - SEALING
+    # ============================================
     def add_sealing_record(self, seal_date, sealer_name, lot_number, sealing_qty, packing_qty):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -648,6 +772,9 @@ class Database:
         conn.close()
         return results
     
+    # ============================================
+    # PRODUCTION - STERILIZATION
+    # ============================================
     def add_sterilization_entry(self, entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark=''):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -705,6 +832,9 @@ class Database:
         conn.close()
         return results
     
+    # ============================================
+    # PRODUCTION - PACKING AFTER STERILE
+    # ============================================
     def add_packing_after_sterile(self, pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark=''):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -724,6 +854,9 @@ class Database:
         conn.close()
         return results
     
+    # ============================================
+    # HR - EMPLOYEES
+    # ============================================
     def get_next_employee_code(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -774,6 +907,9 @@ class Database:
         conn.close()
         return True
     
+    # ============================================
+    # HR - ATTENDANCE
+    # ============================================
     def add_attendance(self, attendance_date, employee_code, check_in_time, status='Present', remark=''):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -807,6 +943,9 @@ class Database:
         today = datetime.now().strftime("%Y-%m-%d")
         return self.get_attendance(today)
     
+    # ============================================
+    # SYSTEM - LANGUAGE
+    # ============================================
     def get_language(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -823,12 +962,219 @@ class Database:
         conn.close()
         return True
     
+    # ============================================
+    # REPORTS
+    # ============================================
     def get_sterilized_goods_report(self):
         finishes = self.get_sterilization_finishes()
         total_bags = sum(f[3] for f in finishes) if finishes else 0
         total_pcs = sum(f[4] for f in finishes) if finishes else 0
         return {'total_bags': total_bags, 'total_pcs': total_pcs, 'records': finishes}
     
+    # ============================================
+    # SALES - CUSTOMERS
+    # ============================================
+    def get_next_customer_code(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE customer_counter SET last_number = last_number + 1 WHERE id = 1")
+        cursor.execute("SELECT last_number FROM customer_counter WHERE id = 1")
+        next_num = cursor.fetchone()[0]
+        conn.commit()
+        conn.close()
+        return f"C{next_num:04d}"
+
+    def add_customer(self, customer_code, customer_name, email, phone, address, city, country):
+        today = datetime.now().strftime("%Y-%m-%d")
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO customers (customer_code, customer_name, email, phone, address, city, country, created_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (customer_code, customer_name, email, phone, address, city, country, today)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except:
+            conn.close()
+            return False
+
+    def get_all_customers(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT customer_code, customer_name, email, phone, address, city, country, created_date FROM customers WHERE status = 'Active' ORDER BY customer_name")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def get_customer_by_code(self, customer_code):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT customer_code, customer_name, email, phone, address, city, country FROM customers WHERE customer_code = ?", (customer_code,))
+        result = cursor.fetchone()
+        conn.close()
+        return result
+
+    def delete_customer(self, customer_code):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM customers WHERE customer_code = ?", (customer_code,))
+        conn.commit()
+        conn.close()
+        return True
+
+    # ============================================
+    # SALES - ORDERS
+    # ============================================
+    def get_next_order_number(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE order_counter SET last_number = last_number + 1 WHERE id = 1")
+        cursor.execute("SELECT last_number FROM order_counter WHERE id = 1")
+        next_num = cursor.fetchone()[0]
+        conn.commit()
+        conn.close()
+        return f"SO{next_num:05d}"
+
+    def add_sales_order(self, order_number, customer_code, order_date, delivery_date, status, notes, created_by):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO sales_orders (order_number, customer_code, order_date, delivery_date, status, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (order_number, customer_code, order_date, delivery_date, status, notes, created_by)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def add_sales_order_item(self, order_number, item_name, quantity, unit_price, total_price):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO sales_order_items (order_number, item_name, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)",
+            (order_number, item_name, quantity, unit_price, total_price)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def update_order_total(self, order_number, total_amount):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE sales_orders SET total_amount = ? WHERE order_number = ?",
+            (total_amount, order_number)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_all_orders(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT o.order_number, c.customer_name, o.order_date, o.delivery_date, o.status, o.total_amount, o.notes 
+            FROM sales_orders o 
+            JOIN customers c ON o.customer_code = c.customer_code 
+            ORDER BY o.timestamp DESC
+        """)
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def get_order_by_number(self, order_number):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM sales_orders WHERE order_number = ?", (order_number,))
+        order = cursor.fetchone()
+        if order:
+            cursor.execute("SELECT item_name, quantity, unit_price, total_price FROM sales_order_items WHERE order_number = ?", (order_number,))
+            items = cursor.fetchall()
+            conn.close()
+            return order, items
+        conn.close()
+        return None, None
+
+    def update_order_status(self, order_number, status):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE sales_orders SET status = ? WHERE order_number = ?",
+            (status, order_number)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def delete_order(self, order_number):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sales_order_items WHERE order_number = ?", (order_number,))
+        cursor.execute("DELETE FROM sales_orders WHERE order_number = ?", (order_number,))
+        conn.commit()
+        conn.close()
+        return True
+
+    # ============================================
+    # SALES - INVOICES
+    # ============================================
+    def get_next_invoice_number(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE invoice_counter SET last_number = last_number + 1 WHERE id = 1")
+        cursor.execute("SELECT last_number FROM invoice_counter WHERE id = 1")
+        next_num = cursor.fetchone()[0]
+        conn.commit()
+        conn.close()
+        return f"INV{next_num:05d}"
+
+    def add_invoice(self, invoice_number, order_number, customer_code, invoice_date, due_date, total_amount, paid_amount, status, notes):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO invoices (invoice_number, order_number, customer_code, invoice_date, due_date, total_amount, paid_amount, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (invoice_number, order_number, customer_code, invoice_date, due_date, total_amount, paid_amount, status, notes)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_all_invoices(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT i.invoice_number, i.order_number, c.customer_name, i.invoice_date, i.due_date, i.total_amount, i.paid_amount, i.status 
+            FROM invoices i 
+            JOIN customers c ON i.customer_code = c.customer_code 
+            ORDER BY i.timestamp DESC
+        """)
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def update_invoice_payment(self, invoice_number, paid_amount):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE invoices SET paid_amount = paid_amount + ?, status = CASE WHEN paid_amount + ? >= total_amount THEN 'Paid' ELSE 'Partial' END WHERE invoice_number = ?",
+            (paid_amount, paid_amount, invoice_number)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_invoice_by_number(self, invoice_number):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM invoices WHERE invoice_number = ?", (invoice_number,))
+        result = cursor.fetchone()
+        conn.close()
+        return result
+
+    # ============================================
+    # DELETE RECORDS
+    # ============================================
     def delete_raw_material_entry(self, record_id):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()

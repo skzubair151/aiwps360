@@ -625,3 +625,115 @@ def settings_restore():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+# ============================================
+# SALES MODULE ROUTES
+# ============================================
+
+@app.route('/sales')
+def sales():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    customers = manager.get_all_customers()
+    orders = manager.get_all_orders()
+    invoices = manager.get_all_invoices()
+    products = manager.get_all_products()
+    now = datetime.now().strftime("%Y-%m-%d")
+    
+    return render_template(
+        'sales.html',
+        active='sales',
+        customers=customers,
+        orders=orders,
+        invoices=invoices,
+        products=products,
+        now=now
+    )
+
+@app.route('/sales/add_customer', methods=['POST'])
+def add_customer():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    customer_name = request.form.get('customer_name', '')
+    email = request.form.get('email', '')
+    phone = request.form.get('phone', '')
+    address = request.form.get('address', '')
+    city = request.form.get('city', '')
+    country = request.form.get('country', '')
+    
+    success, message = manager.add_customer(customer_name, email, phone, address, city, country)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/create_order', methods=['POST'])
+def create_order():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    customer_code = request.form.get('customer_code', '')
+    order_date = request.form.get('order_date', '')
+    delivery_date = request.form.get('delivery_date', '')
+    notes = request.form.get('notes', '')
+    created_by = session['user']['full_name']
+    
+    # Parse items from form
+    items = []
+    item_names = request.form.getlist('item_name[]')
+    quantities = request.form.getlist('quantity[]')
+    prices = request.form.getlist('unit_price[]')
+    
+    for i in range(len(item_names)):
+        if item_names[i] and int(quantities[i]) > 0:
+            items.append({
+                'item_name': item_names[i],
+                'quantity': int(quantities[i]),
+                'unit_price': float(prices[i])
+            })
+    
+    success, message = manager.create_sales_order(customer_code, order_date, delivery_date, items, notes, created_by)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/update_status', methods=['POST'])
+def update_order_status():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    order_number = request.form.get('order_number', '')
+    status = request.form.get('status', '')
+    
+    manager.update_order_status(order_number, status)
+    flash('✅ Order status updated!', 'success')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/create_invoice', methods=['POST'])
+def create_invoice():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    order_number = request.form.get('order_number', '')
+    invoice_date = request.form.get('invoice_date', datetime.now().strftime("%Y-%m-%d"))
+    due_date = request.form.get('due_date', '')
+    notes = request.form.get('notes', '')
+    
+    success, message = manager.create_invoice(order_number, invoice_date, due_date, notes)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('sales'))
+
+@app.route('/sales/record_payment', methods=['POST'])
+def record_payment():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    invoice_number = request.form.get('invoice_number', '')
+    amount = float(request.form.get('amount', 0))
+    
+    if amount <= 0:
+        flash('❌ Payment amount must be greater than 0!', 'error')
+        return redirect(url_for('sales'))
+    
+    manager.record_payment(invoice_number, amount)
+    flash('✅ Payment recorded successfully!', 'success')
+    return redirect(url_for('sales'))
