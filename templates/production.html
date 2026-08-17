@@ -1,418 +1,821 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="dept-layout">
-    <div class="dept-sidebar" id="prod-sidebar">
-        <button data-target="p-transfer" class="active">{{ tr('prod_transfer') }}</button>
-        <button data-target="p-checking">{{ tr('prod_checking') }}</button>
-        <button data-target="p-assembly">{{ tr('prod_assembly') }}</button>
-        <button data-target="p-packing">{{ tr('prod_packing') }}</button>
-        <button data-target="p-sealing">{{ tr('prod_sealing') }}</button>
-        <button data-target="p-ster-entry">{{ tr('prod_ster_entry') }}</button>
-        <button data-target="p-ster-start">{{ tr('prod_ster_start') }}</button>
-        <button data-target="p-ster-finish">{{ tr('prod_ster_finish') }}</button>
-        <button data-target="p-pack-after">{{ tr('prod_pack_after') }}</button>
-    </div>
-
-    <div class="dept-content">
-
-        <div class="dept-panel active" id="p-transfer">
-            <div class="card">
-                <h3>{{ tr('prod_transfer_title') }}</h3>
-                <form method="post" action="/production/transfer">
-                    <label>{{ tr('wh_item_name') }}</label>
-                    <select name="item_name" required>
-                        <option value="">-- {{ tr('wh_item_name') }} --</option>
-                        {% for p in products %}
-                        <option value="{{ p[0] }}">{{ p[0] }}</option>
-                        {% endfor %}
-                    </select>
-                    <label>{{ tr('quantity') }}</label>
-                    <input type="number" name="quantity" required>
-                    <label>{{ tr('unit') }}</label>
-                    <select name="unit">
-                        <option value="PCS">{{ tr('pcs') }}</option>
-                        <option value="KG">KG</option>
-                        <option value="BOX">BOX</option>
-                    </select>
-                    <label>{{ tr('prod_received_by') }}</label>
-                    <input type="text" name="received_by" required>
-                    <label>{{ tr('prod_issued_by') }}</label>
-                    <input type="text" name="issued_by" required>
-                    <button type="submit">{{ tr('prod_transfer_btn') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('prod_transfer_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('wh_item_name') }}</th>
-                        <th>{{ tr('quantity') }}</th>
-                        <th>{{ tr('prod_received') }}</th>
-                        <th>{{ tr('prod_issued') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for t in transfers %}
-                    <tr>
-                        <td>{{ t[6] }}</td>
-                        <td>{{ t[1] }}</td>
-                        <td>{{ t[2] }}</td>
-                        <td>{{ t[4] }}</td>
-                        <td>{{ t[5] }}</td>
-                        <td>
-                            <form method="post" action="/production/delete_transfer/{{ t[0] }}" style="display:inline;" onsubmit="return confirm('Delete this transfer?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
+{% if app_settings.tab_view == 'topbar' %}
+    <!-- TOPBAR STYLE -->
+    <div class="dept-layout-topbar">
+        <div class="dept-sidebar-topbar" id="prod-sidebar">
+            <button data-target="p-transfer" class="active"><i class="fas fa-exchange-alt"></i> Transfer</button>
+            <button data-target="p-checking"><i class="fas fa-check-double"></i> Checking</button>
+            <button data-target="p-assembly"><i class="fas fa-tools"></i> Assembly</button>
+            <button data-target="p-packing"><i class="fas fa-box"></i> Packing (LOT)</button>
+            <button data-target="p-sealing"><i class="fas fa-lock"></i> Sealing</button>
+            <button data-target="p-ster-entry"><i class="fas fa-vial"></i> Sterilization Entry</button>
+            <button data-target="p-ster-start"><i class="fas fa-play"></i> Sterilization Start</button>
+            <button data-target="p-ster-finish"><i class="fas fa-stop"></i> Sterilization Finish</button>
+            <button data-target="p-pack-after"><i class="fas fa-box-open"></i> Packing After Sterile</button>
         </div>
-
-        <div class="dept-panel" id="p-checking">
-            <div class="card">
-                <h3>{{ tr('prod_checking') }}</h3>
-                <form method="post" action="/production/checking">
-                    <label>{{ tr('wh_item_name') }}</label>
-                    <input type="text" name="item_name" required>
-                    <label>{{ tr('quantity') }}</label>
-                    <input type="number" name="quantity" required>
-                    <label>{{ tr('unit') }}</label>
-                    <select name="unit">
-                        <option value="PCS">{{ tr('pcs') }}</option>
-                        <option value="KG">KG</option>
-                        <option value="BOX">BOX</option>
-                    </select>
-                    <label>{{ tr('prod_checker_name') }}</label>
-                    <input type="text" name="checker_name" required>
-                    <button type="submit">{{ tr('prod_record_check') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('prod_checking_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('wh_item_name') }}</th>
-                        <th>{{ tr('quantity') }}</th>
-                        <th>{{ tr('prod_checker') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for c in checking_records %}
-                    <tr>
-                        <td>{{ c[1] }}</td>
-                        <td>{{ c[2] }}</td>
-                        <td>{{ c[3] }}</td>
-                        <td>{{ c[5] }}</td>
-                        <td>
-                            <form method="post" action="/production/delete_checking/{{ c[0] }}" style="display:inline;" onsubmit="return confirm('Delete this checking record?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
+        <div class="dept-content-topbar">
+{% else %}
+    <!-- SIDEBAR STYLE (DEFAULT) -->
+    <div class="dept-layout">
+        <div class="dept-sidebar" id="prod-sidebar">
+            <button data-target="p-transfer" class="active"><i class="fas fa-exchange-alt"></i> Transfer</button>
+            <button data-target="p-checking"><i class="fas fa-check-double"></i> Checking</button>
+            <button data-target="p-assembly"><i class="fas fa-tools"></i> Assembly</button>
+            <button data-target="p-packing"><i class="fas fa-box"></i> Packing (LOT)</button>
+            <button data-target="p-sealing"><i class="fas fa-lock"></i> Sealing</button>
+            <button data-target="p-ster-entry"><i class="fas fa-vial"></i> Sterilization Entry</button>
+            <button data-target="p-ster-start"><i class="fas fa-play"></i> Sterilization Start</button>
+            <button data-target="p-ster-finish"><i class="fas fa-stop"></i> Sterilization Finish</button>
+            <button data-target="p-pack-after"><i class="fas fa-box-open"></i> Packing After Sterile</button>
         </div>
+        <div class="dept-content">
+{% endif %}
 
-        <div class="dept-panel" id="p-assembly">
-            <div class="card">
-                <h3>{{ tr('prod_assembly') }}</h3>
-                <form method="post" action="/production/assembly">
-                    <label>{{ tr('quantity') }}</label>
-                    <input type="number" name="quantity" required>
-                    <label>{{ tr('unit') }}</label>
-                    <select name="unit">
-                        <option value="PCS">{{ tr('pcs') }}</option>
-                    </select>
-                    <label>{{ tr('prod_assembler') }}</label>
-                    <input type="text" name="assembler_name" required>
-                    <button type="submit">{{ tr('prod_record_assembly') }}</button>
-                </form>
+            <!-- Transfer Panel -->
+            <div class="dept-panel active" id="p-transfer">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-primary me-2"></i> Transfer Warehouse → Production</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/transfer">
+                                    <div class="mb-3">
+                                        <label class="form-label">Item Name</label>
+                                        <select name="item_name" class="form-select" required>
+                                            <option value="">-- Select Item --</option>
+                                            {% for p in products %}
+                                            <option value="{{ p[0] }}">{{ p[0] }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Quantity</label>
+                                                <input type="number" name="quantity" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Unit</label>
+                                                <select name="unit" class="form-select">
+                                                    <option value="PCS">PCS</option>
+                                                    <option value="KG">KG</option>
+                                                    <option value="BOX">BOX</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Received By (Production)</label>
+                                        <input type="text" name="received_by" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Issued By (Warehouse)</label>
+                                        <input type="text" name="issued_by" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-arrow-right me-1"></i> Transfer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-primary"></i> Transfer History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Item</th>
+                                                <th>Qty</th>
+                                                <th>Received By</th>
+                                                <th>Issued By</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for t in transfers %}
+                                            <tr>
+                                                <td>{{ t[6] }}</td>
+                                                <td>{{ t[1] }}</td>
+                                                <td>{{ t[2] }}</td>
+                                                <td>{{ t[4] }}</td>
+                                                <td>{{ t[5] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/production/delete_transfer/{{ t[0] }}" style="display:inline;" onsubmit="return confirm('Delete this transfer?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card">
-                <h3>{{ tr('prod_assembly_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('prod_assembler_col') }}</th>
-                        <th>{{ tr('quantity') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for a in assembly_records %}
-                    <tr>
-                        <td>{{ a[1] }}</td>
-                        <td>{{ a[2] }}</td>
-                        <td>{{ a[3] }}</td>
-                        <td>
-                            <form method="post" action="/production/delete_assembly/{{ a[0] }}" style="display:inline;" onsubmit="return confirm('Delete this assembly record?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
+
+            <!-- Checking Panel -->
+            <div class="dept-panel" id="p-checking">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-success me-2"></i> Checking</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/checking">
+                                    <div class="mb-3">
+                                        <label class="form-label">Item Name</label>
+                                        <input type="text" name="item_name" class="form-control" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Quantity</label>
+                                                <input type="number" name="quantity" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Unit</label>
+                                                <select name="unit" class="form-select">
+                                                    <option value="PCS">PCS</option>
+                                                    <option value="KG">KG</option>
+                                                    <option value="BOX">BOX</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Checker Name</label>
+                                        <input type="text" name="checker_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check me-1"></i> Record Check
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-success"></i> Checking History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Item</th>
+                                                <th>Qty</th>
+                                                <th>Checker</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for c in checking_records %}
+                                            <tr>
+                                                <td>{{ c[1] }}</td>
+                                                <td>{{ c[2] }}</td>
+                                                <td>{{ c[3] }}</td>
+                                                <td>{{ c[5] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/production/delete_checking/{{ c[0] }}" style="display:inline;" onsubmit="return confirm('Delete this checking record?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Assembly Panel -->
+            <div class="dept-panel" id="p-assembly">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-tools text-warning me-2"></i> Assembly</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/assembly">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Quantity</label>
+                                                <input type="number" name="quantity" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Unit</label>
+                                                <select name="unit" class="form-select">
+                                                    <option value="PCS">PCS</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Assembler Name</label>
+                                        <input type="text" name="assembler_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-tools me-1"></i> Record Assembly
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-warning"></i> Assembly History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Assembler</th>
+                                                <th>Quantity</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for a in assembly_records %}
+                                            <tr>
+                                                <td>{{ a[1] }}</td>
+                                                <td>{{ a[2] }}</td>
+                                                <td>{{ a[3] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/production/delete_assembly/{{ a[0] }}" style="display:inline;" onsubmit="return confirm('Delete this assembly record?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Packing Panel -->
+            <div class="dept-panel" id="p-packing">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-info me-2"></i> Packing (LOT)</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/packing_before_seal">
+                                    <div class="mb-3">
+                                        <label class="form-label">LOT Number</label>
+                                        <input type="text" name="lot_number" class="form-control" placeholder="e.g. LOT001" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Quantity</label>
+                                                <input type="number" name="quantity" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Unit</label>
+                                                <select name="unit" class="form-select">
+                                                    <option value="PCS">PCS</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Packer Name</label>
+                                        <input type="text" name="packer_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="fas fa-box me-1"></i> Record Packing
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-info"></i> Packing History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>LOT</th>
+                                                <th>Packer</th>
+                                                <th>Qty</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for p in packing_records %}
+                                            <tr>
+                                                <td>{{ p[1] }}</td>
+                                                <td>{{ p[3] }}</td>
+                                                <td>{{ p[2] }}</td>
+                                                <td>{{ p[4] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/production/delete_packing/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this packing record?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sealing Panel -->
+            <div class="dept-panel" id="p-sealing">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-danger me-2"></i> Sealing</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/sealing">
+                                    <div class="mb-3">
+                                        <label class="form-label">LOT Number</label>
+                                        <input type="text" name="lot_number" class="form-control" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Sealing Quantity</label>
+                                                <input type="number" name="sealing_qty" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Packing Quantity</label>
+                                                <input type="number" name="packing_qty" class="form-control" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Sealer Name</label>
+                                        <input type="text" name="sealer_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-lock me-1"></i> Record Sealing
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-danger"></i> Sealing History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>LOT</th>
+                                                <th>Sealer</th>
+                                                <th>Sealing Qty</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for s in sealing_records %}
+                                            <tr>
+                                                <td>{{ s[1] }}</td>
+                                                <td>{{ s[3] }}</td>
+                                                <td>{{ s[2] }}</td>
+                                                <td>{{ s[4] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/production/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this sealing record?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sterilization Entry Panel -->
+            <div class="dept-panel" id="p-ster-entry">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-purple me-2"></i> Sterilization Entry</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/sterilization_entry">
+                                    <div class="mb-3">
+                                        <label class="form-label">LOT Number</label>
+                                        <input type="text" name="lot_number" class="form-control" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Bag Quantity</label>
+                                                <input type="number" name="bag_quantity" value="0" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">PCS Quantity</label>
+                                                <input type="number" name="pcs_quantity" value="0" class="form-control" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Person Name</label>
+                                        <input type="text" name="person_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn" style="background:#6f42c1; color:white;">
+                                        <i class="fas fa-vial me-1"></i> Record Entry
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-purple"></i> Sterilization Entry History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>LOT</th>
+                                                <th>Bags</th>
+                                                <th>PCS</th>
+                                                <th>Person</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for e in sterilization_entries %}
+                                            <tr>
+                                                <td>{{ e[1] }}</td>
+                                                <td>{{ e[5] }}</td>
+                                                <td>{{ e[3] }}</td>
+                                                <td>{{ e[4] }}</td>
+                                                <td>{{ e[2] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/production/delete_sterilization_entry/{{ e[0] }}" style="display:inline;" onsubmit="return confirm('Delete this sterilization entry?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sterilization Start Panel -->
+            <div class="dept-panel" id="p-ster-start">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-play-circle text-success me-2"></i> Sterilization Start</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/sterilization_start">
+                                    <div class="mb-3">
+                                        <label class="form-label">LOT Number</label>
+                                        <input type="text" name="lot_number" class="form-control" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Bag Quantity</label>
+                                                <input type="number" name="bag_quantity" value="0" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">PCS Quantity</label>
+                                                <input type="number" name="pcs_quantity" value="0" class="form-control" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Operator Name</label>
+                                        <input type="text" name="operator_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-play me-1"></i> Record Start
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-success"></i> Sterilization Start History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date/Time</th>
+                                                <th>LOT</th>
+                                                <th>Bags</th>
+                                                <th>PCS</th>
+                                                <th>Operator</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for s in sterilization_starts %}
+                                            <tr>
+                                                <td>{{ s[1] }}</td>
+                                                <td>{{ s[5] }}</td>
+                                                <td>{{ s[3] }}</td>
+                                                <td>{{ s[4] }}</td>
+                                                <td>{{ s[2] }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sterilization Finish Panel -->
+            <div class="dept-panel" id="p-ster-finish">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-stop-circle text-danger me-2"></i> Sterilization Finish</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/sterilization_finish">
+                                    <div class="mb-3">
+                                        <label class="form-label">LOT Number</label>
+                                        <input type="text" name="lot_number" class="form-control" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Bag Quantity</label>
+                                                <input type="number" name="bag_quantity" value="0" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">PCS Quantity</label>
+                                                <input type="number" name="pcs_quantity" value="0" class="form-control" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Operator Name</label>
+                                        <input type="text" name="operator_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-stop me-1"></i> Record Finish
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-danger"></i> Sterilization Finish History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date/Time</th>
+                                                <th>LOT</th>
+                                                <th>Bags</th>
+                                                <th>PCS</th>
+                                                <th>Operator</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for f in sterilization_finishes %}
+                                            <tr>
+                                                <td>{{ f[1] }}</td>
+                                                <td>{{ f[5] }}</td>
+                                                <td>{{ f[3] }}</td>
+                                                <td>{{ f[4] }}</td>
+                                                <td>{{ f[2] }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Packing After Sterile Panel -->
+            <div class="dept-panel" id="p-pack-after">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-info me-2"></i> Packing After Sterile</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/production/packing_after_sterile">
+                                    <div class="mb-3">
+                                        <label class="form-label">LOT Number</label>
+                                        <input type="text" name="lot_number" class="form-control" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Bag Quantity</label>
+                                                <input type="number" name="bag_quantity" value="0" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">PCS Quantity</label>
+                                                <input type="number" name="pcs_quantity" value="0" class="form-control" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Packer Name</label>
+                                        <input type="text" name="packer_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="fas fa-box-open me-1"></i> Record Packing
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-info"></i> Packing After Sterile History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>LOT</th>
+                                                <th>Bags</th>
+                                                <th>PCS</th>
+                                                <th>Packer</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for p in packing_after_sterile %}
+                                            <tr>
+                                                <td>{{ p[1] }}</td>
+                                                <td>{{ p[3] }}</td>
+                                                <td>{{ p[4] }}</td>
+                                                <td>{{ p[5] }}</td>
+                                                <td>{{ p[2] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/production/delete_pack_after/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this packing after sterile record?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-
-        <div class="dept-panel" id="p-packing">
-            <div class="card">
-                <h3>{{ tr('prod_packing_title') }}</h3>
-                <form method="post" action="/production/packing_before_seal">
-                    <label>{{ tr('prod_lot_number') }}</label>
-                    <input type="text" name="lot_number" required placeholder="e.g. LOT001">
-                    <label>{{ tr('quantity') }}</label>
-                    <input type="number" name="quantity" required>
-                    <label>{{ tr('unit') }}</label>
-                    <select name="unit">
-                        <option value="PCS">{{ tr('pcs') }}</option>
-                    </select>
-                    <label>{{ tr('prod_packer') }}</label>
-                    <input type="text" name="packer_name" required>
-                    <button type="submit">{{ tr('prod_record_packing') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('prod_packing_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('prod_lot_number') }}</th>
-                        <th>{{ tr('prod_packer_col') }}</th>
-                        <th>{{ tr('quantity') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for p in packing_records %}
-                    <tr>
-                        <td>{{ p[1] }}</td>
-                        <td>{{ p[3] }}</td>
-                        <td>{{ p[2] }}</td>
-                        <td>{{ p[4] }}</td>
-                        <td>
-                            <form method="post" action="/production/delete_packing/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this packing record?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
-        <div class="dept-panel" id="p-sealing">
-            <div class="card">
-                <h3>{{ tr('prod_sealing') }}</h3>
-                <form method="post" action="/production/sealing">
-                    <label>{{ tr('prod_lot_number') }}</label>
-                    <input type="text" name="lot_number" required placeholder="{{ tr('prod_lot_number') }}">
-                    <label>{{ tr('prod_sealing_qty') }}</label>
-                    <input type="number" name="sealing_qty" required>
-                    <label>{{ tr('prod_packing_qty') }}</label>
-                    <input type="number" name="packing_qty" required>
-                    <label>{{ tr('prod_sealer') }}</label>
-                    <input type="text" name="sealer_name" required>
-                    <button type="submit">{{ tr('prod_record_sealing') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('prod_sealing_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('prod_lot_number') }}</th>
-                        <th>{{ tr('prod_sealer_col') }}</th>
-                        <th>{{ tr('prod_sealing_qty_col') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for s in sealing_records %}
-                    <tr>
-                        <td>{{ s[1] }}</td>
-                        <td>{{ s[3] }}</td>
-                        <td>{{ s[2] }}</td>
-                        <td>{{ s[4] }}</td>
-                        <td>
-                            <form method="post" action="/production/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this sealing record?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
-        <div class="dept-panel" id="p-ster-entry">
-            <div class="card">
-                <h3>{{ tr('prod_ster_entry_title') }}</h3>
-                <form method="post" action="/production/sterilization_entry">
-                    <label>{{ tr('prod_lot_number') }}</label>
-                    <input type="text" name="lot_number" required>
-                    <label>{{ tr('prod_bag_qty') }}</label>
-                    <input type="number" name="bag_quantity" value="0" required>
-                    <label>{{ tr('prod_pcs_qty') }}</label>
-                    <input type="number" name="pcs_quantity" value="0" required>
-                    <label>{{ tr('prod_person_name') }}</label>
-                    <input type="text" name="person_name" required>
-                    <button type="submit">{{ tr('prod_record_entry') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('prod_ster_entry_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('prod_lot_number') }}</th>
-                        <th>{{ tr('prod_bag_qty') }}</th>
-                        <th>{{ tr('prod_pcs_qty') }}</th>
-                        <th>{{ tr('prod_person_name') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for e in sterilization_entries %}
-                    <tr>
-                        <td>{{ e[1] }}</td>
-                        <td>{{ e[5] }}</td>
-                        <td>{{ e[3] }}</td>
-                        <td>{{ e[4] }}</td>
-                        <td>{{ e[2] }}</td>
-                        <td>
-                            <form method="post" action="/production/delete_sterilization_entry/{{ e[0] }}" style="display:inline;" onsubmit="return confirm('Delete this sterilization entry?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
-        <div class="dept-panel" id="p-ster-start">
-            <div class="card">
-                <h3>{{ tr('prod_ster_start_title') }}</h3>
-                <form method="post" action="/production/sterilization_start">
-                    <label>{{ tr('prod_lot_number') }}</label>
-                    <input type="text" name="lot_number" required>
-                    <label>{{ tr('prod_bag_qty') }}</label>
-                    <input type="number" name="bag_quantity" value="0" required>
-                    <label>{{ tr('prod_pcs_qty') }}</label>
-                    <input type="number" name="pcs_quantity" value="0" required>
-                    <label>{{ tr('prod_operator') }}</label>
-                    <input type="text" name="operator_name" required>
-                    <button type="submit">{{ tr('prod_record_start') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('prod_ster_start_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('prod_datetime') }}</th>
-                        <th>{{ tr('prod_lot_number') }}</th>
-                        <th>{{ tr('prod_bag_qty') }}</th>
-                        <th>{{ tr('prod_pcs_qty') }}</th>
-                        <th>{{ tr('prod_operator_col') }}</th>
-                    </tr>
-                    {% for s in sterilization_starts %}
-                    <tr>
-                        <td>{{ s[1] }}</td>
-                        <td>{{ s[5] }}</td>
-                        <td>{{ s[3] }}</td>
-                        <td>{{ s[4] }}</td>
-                        <td>{{ s[2] }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
-        <div class="dept-panel" id="p-ster-finish">
-            <div class="card">
-                <h3>{{ tr('prod_ster_finish_title') }}</h3>
-                <form method="post" action="/production/sterilization_finish">
-                    <label>{{ tr('prod_lot_number') }}</label>
-                    <input type="text" name="lot_number" required>
-                    <label>{{ tr('prod_bag_qty') }}</label>
-                    <input type="number" name="bag_quantity" value="0" required>
-                    <label>{{ tr('prod_pcs_qty') }}</label>
-                    <input type="number" name="pcs_quantity" value="0" required>
-                    <label>{{ tr('prod_operator') }}</label>
-                    <input type="text" name="operator_name" required>
-                    <button type="submit">{{ tr('prod_record_finish') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('prod_ster_finish_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('prod_datetime') }}</th>
-                        <th>{{ tr('prod_lot_number') }}</th>
-                        <th>{{ tr('prod_bag_qty') }}</th>
-                        <th>{{ tr('prod_pcs_qty') }}</th>
-                        <th>{{ tr('prod_operator_col') }}</th>
-                    </tr>
-                    {% for f in sterilization_finishes %}
-                    <tr>
-                        <td>{{ f[1] }}</td>
-                        <td>{{ f[5] }}</td>
-                        <td>{{ f[3] }}</td>
-                        <td>{{ f[4] }}</td>
-                        <td>{{ f[2] }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
-        <div class="dept-panel" id="p-pack-after">
-            <div class="card">
-                <h3>{{ tr('prod_pack_after') }}</h3>
-                <form method="post" action="/production/packing_after_sterile">
-                    <label>{{ tr('prod_lot_number') }}</label>
-                    <input type="text" name="lot_number" required>
-                    <label>{{ tr('prod_bag_qty') }}</label>
-                    <input type="number" name="bag_quantity" value="0" required>
-                    <label>{{ tr('prod_pcs_qty') }}</label>
-                    <input type="number" name="pcs_quantity" value="0" required>
-                    <label>{{ tr('prod_packer') }}</label>
-                    <input type="text" name="packer_name" required>
-                    <button type="submit">{{ tr('prod_record_packing') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('prod_pack_after_history') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('prod_lot_number') }}</th>
-                        <th>{{ tr('prod_bag_qty') }}</th>
-                        <th>{{ tr('prod_pcs_qty') }}</th>
-                        <th>{{ tr('prod_packer_col') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for p in packing_after_sterile %}
-                    <tr>
-                        <td>{{ p[1] }}</td>
-                        <td>{{ p[3] }}</td>
-                        <td>{{ p[4] }}</td>
-                        <td>{{ p[5] }}</td>
-                        <td>{{ p[2] }}</td>
-                        <td>
-                            <form method="post" action="/production/delete_pack_after/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this packing after sterile record?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
     </div>
 </div>
+
+<style>
+    .text-purple { color: #6f42c1; }
+</style>
 
 <script>
 (function() {
     var sidebar = document.getElementById('prod-sidebar');
+    if (!sidebar) sidebar = document.querySelector('.dept-sidebar-topbar');
+    if (!sidebar) return;
     var buttons = sidebar.querySelectorAll('button');
     var panels = document.querySelectorAll('.dept-panel');
     buttons.forEach(function(btn) {

@@ -1,286 +1,487 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="dept-layout">
-    <div class="dept-sidebar" id="iv-sidebar">
-        <button data-target="iv-bom" class="active">📋 BOM</button>
-        <button data-target="iv-assembly">🔧 Assembly</button>
-        <button data-target="iv-packing">📦 Packing</button>
-        <button data-target="iv-sealing">🔒 Sealing</button>
-        <button data-target="iv-tube">📥 Tube Inventory</button>
-    </div>
+<div class="row">
+    <div class="col-12">
+        <!-- Sidebar Tabs -->
+        <ul class="nav nav-pills mb-4" id="ivTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#iv-bom" type="button">
+                    <i class="fas fa-list me-1"></i> 📋 BOM
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#iv-assembly" type="button">
+                    <i class="fas fa-tools me-1"></i> 🔧 Assembly
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#iv-packing" type="button">
+                    <i class="fas fa-box me-1"></i> 📦 Packing
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#iv-sealing" type="button">
+                    <i class="fas fa-lock me-1"></i> 🔒 Sealing
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="pill" data-bs-target="#iv-tube" type="button">
+                    <i class="fas fa-tubes me-1"></i> 📥 Tube Inventory
+                </button>
+            </li>
+        </ul>
 
-    <div class="dept-content">
+        <!-- Tab Content -->
+        <div class="tab-content">
 
-        <!-- BOM Panel -->
-        <div class="dept-panel active" id="iv-bom">
-            <div class="card">
-                <h3>📋 IV Set Bill of Materials</h3>
-                <p style="color:#555; margin-bottom:12px;">1 IV Set = 1 Chamber + 1 Needle + 1 Roller + 1 Latex + 1 Tub + 1 Single Pack Poly</p>
-                <table>
-                    <tr>
-                        <th>Component</th>
-                        <th>Quantity per Set</th>
-                        <th>Unit</th>
-                    </tr>
-                    {% for b in bom %}
-                    <tr>
-                        <td>{{ b[0] }}</td>
-                        <td>{{ b[1] }}</td>
-                        <td>{{ b[2] }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
-        <!-- Assembly Panel -->
-        <div class="dept-panel" id="iv-assembly">
-            <div class="card">
-                <h3>🔧 Assemble IV Sets</h3>
-                <p style="color:#555; margin-bottom:12px;">⚠️ This will deduct components from warehouse stock automatically!</p>
-                <form method="post" action="/iv_set/assemble">
-                    <label>Number of IV Sets</label>
-                    <input type="number" name="quantity" required placeholder="e.g. 100">
-                    <label>Assembler Name</label>
-                    <input type="text" name="assembler_name" required>
-                    <button type="submit">Assemble IV Sets</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>📜 Assembly History</h3>
-                <table>
-                    <tr>
-                        <th>Date</th>
-                        <th>Batch</th>
-                        <th>Sets</th>
-                        <th>Assembler</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                    {% for a in assembly_records %}
-                    <tr>
-                        <td>{{ a[1] }}</td>
-                        <td>{{ a[2] }}</td>
-                        <td>{{ a[3] }}</td>
-                        <td>{{ a[4] }}</td>
-                        <td>{{ a[5] }}</td>
-                        <td>
-                            <form method="post" action="/iv_set/delete_assembly/{{ a[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
-        <!-- Packing Panel -->
-        <div class="dept-panel" id="iv-packing">
-            <div class="card">
-                <h3>📦 Pack IV Sets (Single Pack)</h3>
-                <p style="color:#555; margin-bottom:12px;">1 IV Set + 1 Single Pack Poly = Packed IV Set</p>
-                <form method="post" action="/iv_set/pack">
-                    <label>Select Batch to Pack</label>
-                    <select name="batch_number" required>
-                        <option value="">-- Select Pending Batch --</option>
-                        {% for b in pending_batches %}
-                        <option value="{{ b[0] }}">{{ b[0] }} ({{ b[1] }} sets)</option>
-                        {% endfor %}
-                    </select>
-                    <label>Packer Name</label>
-                    <input type="text" name="packer_name" required>
-                    <button type="submit">Pack & Create LOT</button>
-                </form>
-                <p style="color:#555; margin-top:8px; font-size:12px;">⚠️ This will automatically deduct Single Pack Poly from warehouse stock.</p>
-            </div>
-            <div class="card">
-                <h3>📜 Packing History</h3>
-                <table>
-                    <tr>
-                        <th>Date</th>
-                        <th>Batch</th>
-                        <th>Sets</th>
-                        <th>Packer</th>
-                        <th>LOT</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                    {% for p in packing_records %}
-                    <tr>
-                        <td>{{ p[1] }}</td>
-                        <td>{{ p[2] }}</td>
-                        <td>{{ p[3] }}</td>
-                        <td>{{ p[4] }}</td>
-                        <td>{{ p[5] }}</td>
-                        <td>{{ p[6] }}</td>
-                        <td>
-                            <form method="post" action="/iv_set/delete_packing/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
-        <!-- Sealing Panel -->
-        <div class="dept-panel" id="iv-sealing">
-            <div class="card">
-                <h3>🔒 Seal IV Sets (Multi Pack)</h3>
-                <p style="color:#555; margin-bottom:12px;">
-                    <strong>1 Bag = 6 Multi Packs</strong><br>
-                    <strong>1 Multi Pack = 50 IV Sets</strong><br>
-                    <strong>1 Bag = 300 IV Sets</strong>
-                </p>
-                <form method="post" action="/iv_set/seal" id="seal-form">
-                    <label>Select LOT to Seal</label>
-                    <select name="lot_number" required>
-                        <option value="">-- Select Pending LOT --</option>
-                        {% for l in pending_lots %}
-                        <option value="{{ l[0] }}">{{ l[0] }} ({{ l[1] }} sets)</option>
-                        {% endfor %}
-                    </select>
-                    
-                    <label>Bag Quantity</label>
-                    <input type="number" name="bag_quantity" id="bag_quantity" value="1" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
-                    
-                    <div style="display:flex; gap:15px;">
-                        <div style="flex:1;">
-                            <label>Multi Packs per Bag</label>
-                            <input type="number" name="multi_packs_per_bag" id="multi_packs_per_bag" value="6" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+            <!-- BOM Tab -->
+            <div class="tab-pane fade show active" id="iv-bom">
+                <div class="card card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-list text-primary me-2"></i> 📋 IV Set Bill of Materials</h5>
+                    </div>
+                    <div class="card-body-modern">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            1 IV Set = 1 Chamber + 1 Needle + 1 Roller + 1 Latex + 1 Tub + 1 Single Pack Poly
                         </div>
-                        <div style="flex:1;">
-                            <label>Sets per Multi Pack</label>
-                            <input type="number" name="sets_per_multi_pack" id="sets_per_multi_pack" value="50" min="1" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                        <div class="table-responsive">
+                            <table class="table table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th class="text-center">Quantity per Set</th>
+                                        <th>Unit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for b in bom %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-cube me-2 text-secondary"></i>
+                                            {{ b[0] }}
+                                        </td>
+                                        <td class="text-center"><span class="badge bg-primary">{{ b[1] }}</span></td>
+                                        <td>{{ b[2] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    
-                    <div style="background:#f5f5f5; padding:12px; border-radius:4px; margin:8px 0;">
-                        <div style="display:flex; gap:20px; justify-content:space-around;">
-                            <div><strong>Bags:</strong> <span id="display_bags">1</span></div>
-                            <div><strong>Multi Packs:</strong> <span id="display_multi_packs">6</span></div>
-                            <div><strong>Total PCS:</strong> <span id="display_pcs">300</span></div>
-                        </div>
-                    </div>
-                    
-                    <label>Sealer Name</label>
-                    <input type="text" name="sealer_name" required>
-                    
-                    <button type="submit">Seal & Create Multi Packs</button>
-                </form>
-                <p style="color:#555; margin-top:8px; font-size:12px;">⚠️ This will automatically deduct Multi Pack Poly from warehouse stock.</p>
+                </div>
             </div>
-            <div class="card">
-                <h3>📜 Sealing History</h3>
-                <table>
-                    <tr>
-                        <th>Date</th>
-                        <th>LOT</th>
-                        <th>Bags</th>
-                        <th>Multi Packs/Bag</th>
-                        <th>Total Multi Packs</th>
-                        <th>Sets/Pack</th>
-                        <th>Total PCS</th>
-                        <th>Sealer</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                    {% for s in sealing_records %}
-                    <tr>
-                        <td>{{ s[1] }}</td>
-                        <td>{{ s[2] }}</td>
-                        <td>{{ s[3] }}</td>
-                        <td>{{ s[4] }}</td>
-                        <td>{{ s[5] }}</td>
-                        <td>{{ s[6] }}</td>
-                        <td>{{ s[7] }}</td>
-                        <td>{{ s[8] }}</td>
-                        <td>{{ s[9] }}</td>
-                        <td>
-                            <form method="post" action="/iv_set/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
 
-        <!-- Tube Inventory Panel -->
-        <div class="dept-panel" id="iv-tube">
-            <div class="card">
-                <h3>📥 Add Tube Inventory (Bags/Cartons)</h3>
-                <p style="color:#555; margin-bottom:12px;">Tube comes in Bags (100 PCS per bag) and Cartons (500 PCS per carton)</p>
-                <form method="post" action="/iv_set/add_tube">
-                    <label>Supplier Name</label>
-                    <input type="text" name="supplier_name" required>
-                    
-                    <label>Invoice Number</label>
-                    <input type="text" name="invoice_number" required>
-                    
-                    <div style="display:flex; gap:15px;">
-                        <div style="flex:1;">
-                            <label>Bag Quantity</label>
-                            <input type="number" name="bag_quantity" value="0" min="0">
-                        </div>
-                        <div style="flex:1;">
-                            <label>PCS per Bag</label>
-                            <input type="number" name="pcs_per_bag" value="100" min="1">
-                        </div>
-                    </div>
-                    
-                    <div style="display:flex; gap:15px;">
-                        <div style="flex:1;">
-                            <label>Carton Quantity</label>
-                            <input type="number" name="carton_quantity" value="0" min="0">
-                        </div>
-                        <div style="flex:1;">
-                            <label>PCS per Carton</label>
-                            <input type="number" name="pcs_per_carton" value="500" min="1">
+            <!-- Assembly Tab -->
+            <div class="tab-pane fade" id="iv-assembly">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-primary me-2"></i> 🔧 Assemble IV Sets</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    This will deduct components from warehouse stock automatically!
+                                </div>
+                                <form method="post" action="/iv_set/assemble">
+                                    <div class="mb-3">
+                                        <label class="form-label">Number of IV Sets</label>
+                                        <input type="number" name="quantity" class="form-control" placeholder="e.g. 100" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Assembler Name</label>
+                                        <input type="text" name="assembler_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-tools me-1"></i> Assemble IV Sets
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                    
-                    <label>Received By</label>
-                    <input type="text" name="received_by" required>
-                    
-                    <button type="submit">Add Tube Inventory</button>
-                </form>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-primary"></i> 📜 Assembly History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Batch</th>
+                                                <th>Sets</th>
+                                                <th>Assembler</th>
+                                                <th>Status</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for a in assembly_records %}
+                                            <tr>
+                                                <td>{{ a[1] }}</td>
+                                                <td><span class="badge bg-info">{{ a[2] }}</span></td>
+                                                <td>{{ a[3] }}</td>
+                                                <td>{{ a[4] }}</td>
+                                                <td>
+                                                    {% if a[5] == 'Pending' %}
+                                                        <span class="badge bg-warning">⏳ Pending</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success">✅ Packed</span>
+                                                    {% endif %}
+                                                </td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/iv_set/delete_assembly/{{ a[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card">
-                <h3>📜 Tube Inventory History</h3>
-                <table>
-                    <tr>
-                        <th>Date</th>
-                        <th>Supplier</th>
-                        <th>Invoice</th>
-                        <th>Bags</th>
-                        <th>PCS/Bag</th>
-                        <th>Cartons</th>
-                        <th>PCS/Carton</th>
-                        <th>Total PCS</th>
-                        <th>Received By</th>
-                    </tr>
-                    {% for t in tube_inventory %}
-                    <tr>
-                        <td>{{ t[1] }}</td>
-                        <td>{{ t[2] }}</td>
-                        <td>{{ t[3] }}</td>
-                        <td>{{ t[4] }}</td>
-                        <td>{{ t[5] }}</td>
-                        <td>{{ t[7] }}</td>
-                        <td>{{ t[8] }}</td>
-                        <td>{{ t[6] }}</td>
-                        <td>{{ t[9] }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
 
+            <!-- Packing Tab -->
+            <div class="tab-pane fade" id="iv-packing">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-success me-2"></i> 📦 Pack IV Sets (Single Pack)</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    1 IV Set + 1 Single Pack Poly = Packed IV Set
+                                </div>
+                                <form method="post" action="/iv_set/pack">
+                                    <div class="mb-3">
+                                        <label class="form-label">Select Batch to Pack</label>
+                                        <select name="batch_number" class="form-select" required>
+                                            <option value="">-- Select Pending Batch --</option>
+                                            {% for b in pending_batches %}
+                                            <option value="{{ b[0] }}">{{ b[0] }} ({{ b[1] }} sets)</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Packer Name</label>
+                                        <input type="text" name="packer_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-box me-1"></i> Pack & Create LOT
+                                    </button>
+                                </form>
+                                <div class="alert alert-warning mt-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    This will automatically deduct Single Pack Poly from warehouse stock.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-success"></i> 📜 Packing History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Batch</th>
+                                                <th>Sets</th>
+                                                <th>Packer</th>
+                                                <th>LOT</th>
+                                                <th>Status</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for p in packing_records %}
+                                            <tr>
+                                                <td>{{ p[1] }}</td>
+                                                <td><span class="badge bg-info">{{ p[2] }}</span></td>
+                                                <td>{{ p[3] }}</td>
+                                                <td>{{ p[4] }}</td>
+                                                <td><span class="badge bg-primary">{{ p[5] }}</span></td>
+                                                <td>
+                                                    {% if p[6] == 'Pending' %}
+                                                        <span class="badge bg-warning">⏳ Pending</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success">✅ Sealed</span>
+                                                    {% endif %}
+                                                </td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/iv_set/delete_packing/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sealing Tab -->
+            <div class="tab-pane fade" id="iv-sealing">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-danger me-2"></i> 🔒 Seal IV Sets (Multi Pack)</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>1 Bag = 6 Multi Packs</strong><br>
+                                    <strong>1 Multi Pack = 50 IV Sets</strong><br>
+                                    <strong>1 Bag = 300 IV Sets</strong>
+                                </div>
+                                <form method="post" action="/iv_set/seal" id="seal-form">
+                                    <div class="mb-3">
+                                        <label class="form-label">Select LOT to Seal</label>
+                                        <select name="lot_number" class="form-select" required>
+                                            <option value="">-- Select Pending LOT --</option>
+                                            {% for l in pending_lots %}
+                                            <option value="{{ l[0] }}">{{ l[0] }} ({{ l[1] }} sets)</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Bag Quantity</label>
+                                        <input type="number" name="bag_quantity" id="bag_quantity" value="1" min="1" class="form-control" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Multi Packs per Bag</label>
+                                                <input type="number" name="multi_packs_per_bag" id="multi_packs_per_bag" value="6" min="1" class="form-control" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Sets per Multi Pack</label>
+                                                <input type="number" name="sets_per_multi_pack" id="sets_per_multi_pack" value="50" min="1" class="form-control" required onchange="calculateSealing()" onkeyup="calculateSealing()">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-secondary">
+                                        <div class="row text-center">
+                                            <div class="col-4">
+                                                <strong>Bags:</strong><br>
+                                                <span id="display_bags" class="fs-4 fw-bold text-primary">1</span>
+                                            </div>
+                                            <div class="col-4">
+                                                <strong>Multi Packs:</strong><br>
+                                                <span id="display_multi_packs" class="fs-4 fw-bold text-success">6</span>
+                                            </div>
+                                            <div class="col-4">
+                                                <strong>Total PCS:</strong><br>
+                                                <span id="display_pcs" class="fs-4 fw-bold text-danger">300</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Sealer Name</label>
+                                        <input type="text" name="sealer_name" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-lock me-1"></i> Seal & Create Multi Packs
+                                    </button>
+                                </form>
+                                <div class="alert alert-warning mt-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    This will automatically deduct Multi Pack Poly from warehouse stock.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-danger"></i> 📜 Sealing History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>LOT</th>
+                                                <th>Bags</th>
+                                                <th>Multi Packs/Bag</th>
+                                                <th>Total Multi Packs</th>
+                                                <th>Sets/Pack</th>
+                                                <th>Total PCS</th>
+                                                <th>Sealer</th>
+                                                <th>Status</th>
+                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for s in sealing_records %}
+                                            <tr>
+                                                <td>{{ s[1] }}</td>
+                                                <td><span class="badge bg-primary">{{ s[2] }}</span></td>
+                                                <td>{{ s[3] }}</td>
+                                                <td>{{ s[4] }}</td>
+                                                <td>{{ s[5] }}</td>
+                                                <td>{{ s[6] }}</td>
+                                                <td><strong>{{ s[7] }}</strong></td>
+                                                <td>{{ s[8] }}</td>
+                                                <td>
+                                                    <span class="badge bg-success">✅ {{ s[9] }}</span>
+                                                </td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/iv_set/delete_sealing/{{ s[0] }}" style="display:inline;" onsubmit="return confirm('Delete this record?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tube Inventory Tab -->
+            <div class="tab-pane fade" id="iv-tube">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-info me-2"></i> 📥 Add Tube Inventory (Bags/Cartons)</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Tube comes in Bags (100 PCS per bag) and Cartons (500 PCS per carton)
+                                </div>
+                                <form method="post" action="/iv_set/add_tube">
+                                    <div class="mb-3">
+                                        <label class="form-label">Supplier Name</label>
+                                        <input type="text" name="supplier_name" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Invoice Number</label>
+                                        <input type="text" name="invoice_number" class="form-control" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Bag Quantity</label>
+                                                <input type="number" name="bag_quantity" value="0" min="0" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">PCS per Bag</label>
+                                                <input type="number" name="pcs_per_bag" value="100" min="1" class="form-control">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Carton Quantity</label>
+                                                <input type="number" name="carton_quantity" value="0" min="0" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">PCS per Carton</label>
+                                                <input type="number" name="pcs_per_carton" value="500" min="1" class="form-control">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Received By</label>
+                                        <input type="text" name="received_by" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="fas fa-plus me-1"></i> Add Tube Inventory
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-info"></i> 📜 Tube Inventory History</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Supplier</th>
+                                                <th>Invoice</th>
+                                                <th>Bags</th>
+                                                <th>PCS/Bag</th>
+                                                <th>Cartons</th>
+                                                <th>PCS/Carton</th>
+                                                <th>Total PCS</th>
+                                                <th>Received By</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for t in tube_inventory %}
+                                            <tr>
+                                                <td>{{ t[1] }}</td>
+                                                <td>{{ t[2] }}</td>
+                                                <td>{{ t[3] }}</td>
+                                                <td>{{ t[4] }}</td>
+                                                <td>{{ t[5] }}</td>
+                                                <td>{{ t[7] }}</td>
+                                                <td>{{ t[8] }}</td>
+                                                <td><strong>{{ t[6] }}</strong></td>
+                                                <td>{{ t[9] }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -290,29 +491,14 @@ function calculateSealing() {
     var bags = parseInt(document.getElementById('bag_quantity').value) || 0;
     var multiPerBag = parseInt(document.getElementById('multi_packs_per_bag').value) || 0;
     var setsPerPack = parseInt(document.getElementById('sets_per_multi_pack').value) || 0;
-    
+
     var multiPacks = bags * multiPerBag;
     var totalPcs = multiPacks * setsPerPack;
-    
+
     document.getElementById('display_bags').textContent = bags;
     document.getElementById('display_multi_packs').textContent = multiPacks;
     document.getElementById('display_pcs').textContent = totalPcs;
 }
-
-// Sidebar tabs
-(function() {
-    var sidebar = document.getElementById('iv-sidebar');
-    var buttons = sidebar.querySelectorAll('button');
-    var panels = document.querySelectorAll('.dept-panel');
-    buttons.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            buttons.forEach(function(b) { b.classList.remove('active'); });
-            panels.forEach(function(p) { p.classList.remove('active'); });
-            btn.classList.add('active');
-            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
-        });
-    });
-})();
 
 // Calculate on page load
 document.addEventListener('DOMContentLoaded', function() {

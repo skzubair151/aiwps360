@@ -9,27 +9,24 @@ class AuthManager:
         self.current_user = None
     
     def hash_password(self, password):
+        """Hash password using SHA256"""
         return hashlib.sha256(password.encode()).hexdigest()
     
     def login(self, username, password):
+        """Authenticate user"""
         hashed = self.hash_password(password)
         
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         
-        cursor.execute("PRAGMA table_info(users)")
-        columns = [col[1] for col in cursor.fetchall()]
-        if 'user_type' not in columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'Admin'")
-            conn.commit()
-        
         cursor.execute(
-            "SELECT id, username, full_name, role, user_type FROM users WHERE username = ? AND password = ? AND status = 'Active'",
+            "SELECT id, username, full_name, role FROM users WHERE username = ? AND password = ? AND status = 'Active'",
             (username, hashed)
         )
         result = cursor.fetchone()
         
         if result:
+            # Update last login
             cursor.execute(
                 "UPDATE users SET last_login = ? WHERE id = ?",
                 (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), result[0])
@@ -40,8 +37,7 @@ class AuthManager:
                 'id': result[0],
                 'username': result[1],
                 'full_name': result[2],
-                'role': result[3],
-                'user_type': result[4] if len(result) > 4 else 'Admin'
+                'role': result[3]
             }
             conn.close()
             return True, "Login successful!"
@@ -50,19 +46,24 @@ class AuthManager:
         return False, "Invalid username or password!"
     
     def logout(self):
+        """Logout current user"""
         self.current_user = None
         return True
     
     def get_current_user(self):
+        """Get current user info"""
         return self.current_user
     
     def is_admin(self):
-        return self.current_user and self.current_user.get('user_type', 'Admin') == 'Admin'
+        """Check if current user is Admin"""
+        return self.current_user and self.current_user['role'] == 'Admin'
     
-    def is_viewer(self):
-        return self.current_user and self.current_user.get('user_type', 'Admin') == 'Viewer'
+    def is_manager(self):
+        """Check if current user is Manager or Admin"""
+        return self.current_user and self.current_user['role'] in ['Admin', 'Manager']
     
     def change_password(self, username, old_password, new_password):
+        """Change user password"""
         hashed_old = self.hash_password(old_password)
         hashed_new = self.hash_password(new_password)
         
@@ -87,7 +88,8 @@ class AuthManager:
         conn.close()
         return True, "Password changed successfully!"
     
-    def add_user(self, username, password, full_name, role='Staff', user_type='Viewer'):
+    def add_user(self, username, password, full_name, role='Staff'):
+        """Add new user"""
         hashed = self.hash_password(password)
         today = datetime.now().strftime("%Y-%m-%d")
         
@@ -96,8 +98,8 @@ class AuthManager:
         
         try:
             cursor.execute(
-                "INSERT INTO users (username, password, full_name, role, created_date, user_type) VALUES (?, ?, ?, ?, ?, ?)",
-                (username, hashed, full_name, role, today, user_type)
+                "INSERT INTO users (username, password, full_name, role, created_date) VALUES (?, ?, ?, ?, ?)",
+                (username, hashed, full_name, role, today)
             )
             conn.commit()
             conn.close()
@@ -107,16 +109,18 @@ class AuthManager:
             return False, f"Username '{username}' already exists!"
     
     def get_all_users(self):
+        """Get all users"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, username, full_name, role, status, last_login, user_type FROM users ORDER BY username"
+            "SELECT id, username, full_name, role, status, last_login FROM users ORDER BY username"
         )
         results = cursor.fetchall()
         conn.close()
         return results
     
     def delete_user(self, username):
+        """Delete user (cannot delete admin)"""
         if username == 'admin':
             return False, "Cannot delete admin user!"
         
@@ -128,6 +132,7 @@ class AuthManager:
         return True, f"User '{username}' deleted!"
     
     def update_user_role(self, username, role):
+        """Update user role"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
@@ -139,6 +144,7 @@ class AuthManager:
         return True, f"Role updated for '{username}'!"
     
     def update_user_status(self, username, status):
+        """Activate/Deactivate user"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
@@ -148,14 +154,3 @@ class AuthManager:
         conn.commit()
         conn.close()
         return True, f"Status updated for '{username}'!"
-    
-    def update_user_type(self, username, user_type):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE users SET user_type = ? WHERE username = ?",
-            (user_type, username)
-        )
-        conn.commit()
-        conn.close()
-        return True, f"User type updated for '{username}'!"

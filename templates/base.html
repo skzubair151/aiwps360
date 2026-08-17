@@ -3,72 +3,433 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIWPS — IV Set Manager</title>
+    <title>AIWPS360 ERP — IV Set Manager</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
     <style>
         body {
             font-size: {{ app_settings.font_size }}px;
-            font-family: '{{ app_settings.font_family }}', sans-serif;
+            font-family: '{{ app_settings.font_family }}', 'Inter', sans-serif;
         }
-        {% if app_settings.theme == 'ocean' %}
-        :root { --sidebar-bg: #0b2e3f; --sidebar-bg-hover: #123f56; --accent: #00acc1; --sidebar-text: #a8c5d1; }
-        {% elif app_settings.theme == 'forest' %}
-        :root { --sidebar-bg: #16281c; --sidebar-bg-hover: #1f3a28; --accent: #43a047; --sidebar-text: #a9c2ae; }
-        {% elif app_settings.theme == 'minimal_light' %}
-        :root { --sidebar-bg: #ffffff; --sidebar-bg-hover: #f0f0f0; --accent: #1565c0; --sidebar-text: #333333; }
-        .main-sidebar-title, .main-sidebar-username { color: #1565c0; }
-        {% endif %}
-        {% if app_settings.background_image %}
-        .bg-layer {
-            position: fixed; inset: 0; z-index: -1;
-            background-image: url('{{ url_for("static", filename="uploads/" + app_settings.background_image) }}');
-            background-size: cover; background-attachment: fixed; background-position: center;
-            opacity: {{ app_settings.background_opacity }}%;
+
+        :root {
+            --sidebar-width: 240px;
+            --sidebar-bg: #0f172a;
+            --sidebar-text: #94a3b8;
+            --sidebar-hover: #1e293b;
+            --sidebar-active: #4f46e5;
         }
-        {% endif %}
-        {% if app_settings.fit_to_window == 'on' %}
-        html, body { height: 100vh; overflow: hidden; }
-        .main-content { height: 100vh; overflow-y: auto; }
-        {% endif %}
-        {% if app_settings.tab_view == 'topbar' %}
-        .dept-layout { flex-direction: column; }
-        .dept-sidebar { width: 100%; display: flex; flex-direction: row; overflow-x: auto; }
-        .dept-sidebar button { border-bottom: none; border-right: 1px solid #eee; white-space: nowrap; }
-        {% endif %}
+
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .main-sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding: 20px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .main-sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .main-sidebar-logo img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .main-sidebar-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        .main-sidebar-sub {
+            font-size: 9px;
+            color: var(--sidebar-text);
+            opacity: 0.6;
+            letter-spacing: 1px;
+        }
+
+        .main-sidebar-nav {
+            padding: 0 12px;
+        }
+
+        .main-sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-bottom: 2px;
+        }
+
+        .main-sidebar-nav a:hover {
+            background: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .main-sidebar-nav a.active {
+            background: var(--sidebar-active);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .main-sidebar-nav a i {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .main-sidebar-user {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin-top: auto;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--sidebar-bg);
+        }
+
+        .main-sidebar-username {
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .main-sidebar-user-type {
+            font-size: 11px;
+            color: var(--sidebar-text);
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+
+        .main-sidebar-logout {
+            color: var(--sidebar-text);
+            text-decoration: none;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .main-sidebar-logout:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 24px 32px;
+            flex: 1;
+            min-height: 100vh;
+            background: #f1f5f9;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        /* ============================================ */
+        /* DEPARTMENT LAYOUT - SIDEBAR STYLE (DEFAULT)  */
+        /* ============================================ */
+        .dept-layout {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .dept-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 200px;
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .dept-sidebar button {
+            background: transparent;
+            border: none;
+            padding: 10px 14px;
+            text-align: left;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .dept-sidebar button:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .dept-sidebar button.active {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .dept-sidebar button i {
+            margin-right: 10px;
+            width: 18px;
+            text-align: center;
+        }
+
+        .dept-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dept-panel {
+            display: none;
+        }
+
+        .dept-panel.active {
+            display: block;
+        }
+
+        /* ============================================ */
+        /* DEPARTMENT LAYOUT - TOPBAR STYLE            */
+        /* ============================================ */
+        .dept-layout-topbar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .dept-sidebar-topbar {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 4px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            overflow-x: auto;
+        }
+
+        .dept-sidebar-topbar button {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .dept-sidebar-topbar button:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .dept-sidebar-topbar button.active {
+            background: #4f46e5;
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .dept-sidebar-topbar button i {
+            margin-right: 6px;
+        }
+
+        .dept-content-topbar {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ============================================ */
+        /* RESPONSIVE                                  */
+        /* ============================================ */
+        @media (max-width: 768px) {
+            :root {
+                --sidebar-width: 280px;
+            }
+
+            .main-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .main-sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .main-sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+
+            .main-sidebar-overlay.active {
+                display: block;
+            }
+
+            .dept-sidebar {
+                flex-direction: row;
+                flex-wrap: wrap;
+                min-width: unset;
+                padding: 8px 10px;
+                overflow-x: auto;
+            }
+
+            .dept-sidebar button {
+                padding: 6px 12px;
+                font-size: 12px;
+                white-space: nowrap;
+            }
+
+            .dept-layout {
+                flex-direction: column;
+            }
+
+            .dept-sidebar-topbar {
+                padding: 6px 10px;
+            }
+
+            .dept-sidebar-topbar button {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .dept-sidebar button {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+            .dept-sidebar-topbar button {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+        }
     </style>
 </head>
 <body>
-    {% if app_settings.background_image %}<div class="bg-layer"></div>{% endif %}
+
+    <div class="main-sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
     <div class="app-layout">
-        <div class="main-sidebar">
+        <div class="main-sidebar" id="mainSidebar">
             <div class="main-sidebar-header">
-                <span class="main-sidebar-logo">🚀</span>
+                <div class="main-sidebar-logo">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" 
+                         alt="Logo" 
+                         style="width:40px; height:40px; border-radius:8px; object-fit:cover;"
+                         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏢</text></svg>'">
+                </div>
                 <div>
                     <div class="main-sidebar-title">AIWPS360 ERP</div>
-                    <div style="font-size:9px; color:var(--sidebar-text); opacity:0.6; letter-spacing:1px;">by ZUBAIR</div>
+                    <div class="main-sidebar-sub">by ZUBAIR</div>
                 </div>
             </div>
 
             <nav class="main-sidebar-nav">
-                <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">📊 <span>{{ tr('nav_dashboard') }}</span></a>
-                <a href="/warehouse" class="{% if active == 'warehouse' %}active{% endif %}">🏢 <span>{{ tr('nav_warehouse') }}</span></a>
-                <a href="/production" class="{% if active == 'production' %}active{% endif %}">🏭 <span>{{ tr('nav_production') }}</span></a>
-                <a href="/hr" class="{% if active == 'hr' %}active{% endif %}">👥 <span>{{ tr('nav_hr') }}</span></a>
-                <a href="/sales" class="{% if active == 'sales' %}active{% endif %}">💰 <span>{{ tr('nav_sales') }}</span></a>
-                <a href="/iv_set" class="{% if active == 'iv_set' %}active{% endif %}">🧪 <span>IV Set</span></a>
-                <a href="/reports" class="{% if active == 'reports' %}active{% endif %}">📈 <span>{{ tr('nav_reports') }}</span></a>
-                <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">⚙️ <span>{{ tr('nav_settings') }}</span></a>
+                <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-chart-pie"></i> <span>{{ tr('nav_dashboard') }}</span>
+                </a>
+                <a href="/warehouse" class="{% if active == 'warehouse' %}active{% endif %}">
+                    <i class="fas fa-warehouse"></i> <span>{{ tr('nav_warehouse') }}</span>
+                </a>
+                <a href="/production" class="{% if active == 'production' %}active{% endif %}">
+                    <i class="fas fa-industry"></i> <span>{{ tr('nav_production') }}</span>
+                </a>
+                <a href="/hr" class="{% if active == 'hr' %}active{% endif %}">
+                    <i class="fas fa-users"></i> <span>{{ tr('nav_hr') }}</span>
+                </a>
+                <a href="/sales" class="{% if active == 'sales' %}active{% endif %}">
+                    <i class="fas fa-cart-shopping"></i> <span>{{ tr('nav_sales') }}</span>
+                </a>
+                <a href="/reports" class="{% if active == 'reports' %}active{% endif %}">
+                    <i class="fas fa-file-chart-line"></i> <span>{{ tr('nav_reports') }}</span>
+                </a>
+                <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">
+                    <i class="fas fa-gear"></i> <span>{{ tr('nav_settings') }}</span>
+                </a>
             </nav>
 
             <div class="main-sidebar-user">
                 <div class="main-sidebar-username">{{ session['user']['full_name'] }}</div>
+                <div class="main-sidebar-user-type">
+                    <i class="fas fa-user-shield me-1"></i>
+                    {% if session['user']['user_type'] == 'Admin' %}
+                        🛠️ Admin
+                    {% else %}
+                        👁️ Viewer
+                    {% endif %}
+                </div>
                 <form method="post" action="/set_language" style="margin-bottom:6px;">
-                    <button type="submit" style="background:transparent; color:var(--accent); border:1px solid var(--accent); padding:4px 10px; font-size:11px; width:auto; margin:0; cursor:pointer; border-radius:4px;">{{ tr('lang_toggle') }}</button>
+                    <button type="submit" style="background:transparent; color:var(--sidebar-text); border:1px solid var(--sidebar-text); padding:4px 12px; font-size:11px; width:auto; margin:0; cursor:pointer; border-radius:4px;">
+                        <i class="fas fa-globe me-1"></i> {{ tr('lang_toggle') }}
+                    </button>
                 </form>
-                <a href="/logout" class="main-sidebar-logout">🚪 {{ tr('nav_logout') }}</a>
+                <a href="/logout" class="main-sidebar-logout">
+                    <i class="fas fa-sign-out-alt"></i> {{ tr('nav_logout') }}
+                </a>
             </div>
 
-            <div style="padding:10px 14px; border-top:1px solid #2a3644; font-size:9px; color:#555; line-height:1.6;">
+            <div style="padding:10px 20px; border-top:1px solid rgba(255,255,255,0.06); font-size:9px; color:#475569; line-height:1.6; margin-top:60px;">
                 Dev: ZUBAIR<br>
                 📱 +996990115990<br>
                 ✉️ skzubair151@gmail.com
@@ -76,17 +437,57 @@
         </div>
 
         <div class="main-content">
-            <div class="container">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                        <div class="flash-msg flash-{{ category }}">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-                {% block content %}{% endblock %}
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <button class="sidebar-toggle" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+                <div>
+                    <span class="text-muted" style="font-size:14px;">
+                        <i class="far fa-calendar-alt me-2"></i>
+                        {{ datetime.now().strftime('%A, %B %d, %Y') }}
+                    </span>
+                </div>
             </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('mainSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+    }
+
+    document.addEventListener('click', function(e) {
+        const sidebar = document.getElementById('mainSidebar');
+        const toggle = document.querySelector('.sidebar-toggle');
+        if (window.innerWidth <= 768) {
+            if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                sidebar.classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('active');
+            }
+        }
+    });
+    </script>
+
 </body>
 </html>

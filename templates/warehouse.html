@@ -1,172 +1,332 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="dept-layout">
-    <div class="dept-sidebar" id="wh-sidebar">
-        <button data-target="wh-suppliers" class="active">{{ tr('wh_suppliers') }}</button>
-        <button data-target="wh-raw">{{ tr('wh_raw') }}</button>
-        <button data-target="wh-products">{{ tr('wh_products') }}</button>
-        <button data-target="wh-stock">{{ tr('wh_stock') }}</button>
-    </div>
-
-    <div class="dept-content">
-
-        <div class="dept-panel active" id="wh-suppliers">
-            <div class="card">
-                <h3>{{ tr('wh_add_supplier') }}</h3>
-                <form method="post" action="/warehouse/add_supplier">
-                    <label>{{ tr('wh_supplier_name') }}</label>
-                    <input type="text" name="supplier_name" required>
-                    <label>{{ tr('address') }}</label>
-                    <input type="text" name="supplier_address">
-                    <label>{{ tr('wh_contact_person') }}</label>
-                    <input type="text" name="contact_person">
-                    <label>{{ tr('phone') }}</label>
-                    <input type="text" name="phone">
-                    <button type="submit">{{ tr('wh_add_supplier') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('wh_supplier_list') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('wh_supplier_name') }}</th>
-                        <th>{{ tr('wh_contact_person') }}</th>
-                        <th>{{ tr('phone') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for s in suppliers %}
-                    <tr>
-                        <td>{{ s[1] }}</td>
-                        <td>{{ s[3] }}</td>
-                        <td>{{ s[4] }}</td>
-                        <td>
-                            <form method="post" action="/warehouse/delete_supplier/{{ s[1] }}" style="display:inline;" onsubmit="return confirm('Delete this supplier?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
+{% if app_settings.tab_view == 'topbar' %}
+    <!-- TOPBAR STYLE -->
+    <div class="dept-layout-topbar">
+        <div class="dept-sidebar-topbar" id="wh-sidebar">
+            <button data-target="wh-suppliers" class="active"><i class="fas fa-truck"></i> {{ tr('wh_suppliers') }}</button>
+            <button data-target="wh-raw"><i class="fas fa-boxes"></i> {{ tr('wh_raw') }}</button>
+            <button data-target="wh-products"><i class="fas fa-cube"></i> {{ tr('wh_products') }}</button>
+            <button data-target="wh-stock"><i class="fas fa-warehouse"></i> {{ tr('wh_stock') }}</button>
         </div>
-
-        <div class="dept-panel" id="wh-raw">
-            <div class="card">
-                <h3>{{ tr('wh_receive_raw') }}</h3>
-                <form method="post" action="/warehouse/add_raw_material">
-                    <label>{{ tr('wh_supplier_name') }}</label>
-                    <input type="text" name="supplier_name" required>
-                    <label>{{ tr('wh_invoice_num') }}</label>
-                    <input type="text" name="invoice_number" required>
-                    <label>{{ tr('wh_item_name') }}</label>
-                    <input type="text" name="item_name" required>
-                    <label>{{ tr('quantity') }}</label>
-                    <input type="number" name="quantity" required>
-                    <label>{{ tr('unit') }}</label>
-                    <select name="unit">
-                        <option value="PCS">{{ tr('pcs') }}</option>
-                        <option value="KG">KG</option>
-                        <option value="BOX">BOX</option>
-                    </select>
-                    <label>{{ tr('wh_received_by') }}</label>
-                    <input type="text" name="received_by" required>
-                    <button type="submit">{{ tr('wh_record_entry') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('wh_raw_entries') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('wh_supplier_col') }}</th>
-                        <th>{{ tr('wh_item_name') }}</th>
-                        <th>{{ tr('quantity') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for r in raw_materials %}
-                    <tr>
-                        <td>{{ r[3] }}</td>
-                        <td>{{ r[1] }}</td>
-                        <td>{{ r[5] }}</td>
-                        <td>{{ r[6] }}</td>
-                        <td>
-                            <form method="post" action="/warehouse/delete_raw_material/{{ r[0] }}" style="display:inline;" onsubmit="return confirm('Delete this entry?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
+        <div class="dept-content-topbar">
+{% else %}
+    <!-- SIDEBAR STYLE (DEFAULT) -->
+    <div class="dept-layout">
+        <div class="dept-sidebar" id="wh-sidebar">
+            <button data-target="wh-suppliers" class="active"><i class="fas fa-truck"></i> {{ tr('wh_suppliers') }}</button>
+            <button data-target="wh-raw"><i class="fas fa-boxes"></i> {{ tr('wh_raw') }}</button>
+            <button data-target="wh-products"><i class="fas fa-cube"></i> {{ tr('wh_products') }}</button>
+            <button data-target="wh-stock"><i class="fas fa-warehouse"></i> {{ tr('wh_stock') }}</button>
         </div>
+        <div class="dept-content">
+{% endif %}
 
-        <div class="dept-panel" id="wh-products">
-            <div class="card">
-                <h3>{{ tr('wh_add_product') }}</h3>
-                <form method="post" action="/warehouse/add_product">
-                    <label>{{ tr('wh_product_name') }}</label>
-                    <input type="text" name="product_name" required>
-                    <label>{{ tr('unit') }}</label>
-                    <select name="unit">
-                        <option value="PCS">{{ tr('pcs') }}</option>
-                        <option value="BOX">BOX</option>
-                        <option value="KG">KG</option>
-                    </select>
-                    <label>{{ tr('wh_low_stock_qty') }}</label>
-                    <input type="number" name="low_stock_qty" value="10" required>
-                    <button type="submit">{{ tr('wh_add_product') }}</button>
-                </form>
+            <!-- Suppliers Panel -->
+            <div class="dept-panel active" id="wh-suppliers">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-primary me-2"></i> {{ tr('wh_add_supplier') }}</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/warehouse/add_supplier">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('wh_supplier_name') }}</label>
+                                        <input type="text" name="supplier_name" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('address') }}</label>
+                                        <input type="text" name="supplier_address" class="form-control">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('wh_contact_person') }}</label>
+                                        <input type="text" name="contact_person" class="form-control">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('phone') }}</label>
+                                        <input type="text" name="phone" class="form-control">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-plus me-1"></i> {{ tr('wh_add_supplier') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-list me-2 text-primary"></i> {{ tr('wh_supplier_list') }}</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>{{ tr('wh_supplier_name') }}</th>
+                                                <th>{{ tr('wh_contact_person') }}</th>
+                                                <th>{{ tr('phone') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for s in suppliers %}
+                                            <tr>
+                                                <td>{{ s[1] }}</td>
+                                                <td>{{ s[3] }}</td>
+                                                <td>{{ s[4] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/warehouse/delete_supplier/{{ s[1] }}" style="display:inline;" onsubmit="return confirm('Delete this supplier?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card">
-                <h3>{{ tr('wh_product_list') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('wh_product_col') }}</th>
-                        <th>{{ tr('unit') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for p in products %}
-                    <tr>
-                        <td>{{ p[0] }}</td>
-                        <td>{{ p[1] }}</td>
-                        <td>
-                            <form method="post" action="/warehouse/delete_product/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this product?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
+
+            <!-- Raw Material Panel -->
+            <div class="dept-panel" id="wh-raw">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-success me-2"></i> {{ tr('wh_receive_raw') }}</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/warehouse/add_raw_material">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('wh_supplier_name') }}</label>
+                                        <input type="text" name="supplier_name" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('wh_invoice_num') }}</label>
+                                        <input type="text" name="invoice_number" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('wh_item_name') }}</label>
+                                        <select name="item_name" class="form-select" required>
+                                            <option value="">-- Select Item --</option>
+                                            {% for p in products %}
+                                            <option value="{{ p[0] }}">{{ p[0] }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">{{ tr('quantity') }}</label>
+                                                <input type="number" name="quantity" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">{{ tr('unit') }}</label>
+                                                <select name="unit" class="form-select">
+                                                    <option value="PCS">{{ tr('pcs') }}</option>
+                                                    <option value="KG">KG</option>
+                                                    <option value="BOX">BOX</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('wh_received_by') }}</label>
+                                        <input type="text" name="received_by" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('date') }}</label>
+                                        <input type="date" name="entry_date" class="form-control" value="{{ datetime.now().strftime('%Y-%m-%d') }}" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus me-1"></i> {{ tr('wh_record_entry') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-history me-2 text-success"></i> {{ tr('wh_raw_entries') }}</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('wh_supplier_col') }}</th>
+                                                <th>{{ tr('wh_item_name') }}</th>
+                                                <th>{{ tr('quantity') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for r in raw_materials %}
+                                            <tr>
+                                                <td>{{ r[3] }}</td>
+                                                <td>{{ r[1] }}</td>
+                                                <td>{{ r[5] }}</td>
+                                                <td>{{ r[6] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/warehouse/delete_raw_material/{{ r[0] }}" style="display:inline;" onsubmit="return confirm('Delete this entry?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Products Panel -->
+            <div class="dept-panel" id="wh-products">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-plus-circle text-warning me-2"></i> {{ tr('wh_add_product') }}</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/warehouse/add_product">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('wh_product_name') }}</label>
+                                        <input type="text" name="product_name" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('unit') }}</label>
+                                        <select name="unit" class="form-select">
+                                            <option value="PCS">{{ tr('pcs') }}</option>
+                                            <option value="BOX">BOX</option>
+                                            <option value="KG">KG</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('wh_low_stock_qty') }}</label>
+                                        <input type="number" name="low_stock_qty" value="10" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-plus me-1"></i> {{ tr('wh_add_product') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-list me-2 text-warning"></i> {{ tr('wh_product_list') }}</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>{{ tr('wh_product_col') }}</th>
+                                                <th>{{ tr('unit') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for p in products %}
+                                            <tr>
+                                                <td>{{ p[0] }}</td>
+                                                <td>{{ p[1] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/warehouse/delete_product/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this product?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Panel -->
+            <div class="dept-panel" id="wh-stock">
+                <div class="card card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-warehouse text-primary me-2"></i> {{ tr('wh_stock') }}</h5>
+                    </div>
+                    <div class="card-body-modern p-0">
+                        <div class="table-responsive">
+                            <table class="table table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>{{ tr('wh_item_name') }}</th>
+                                        <th class="text-end">{{ tr('wh_quantity') }}</th>
+                                        <th>{{ tr('unit') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for s in stock_items %}
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-box text-secondary me-2"></i>
+                                            {{ s[0] }}
+                                            {% if s[1] <= 10 %}
+                                                <span class="badge bg-danger ms-2">Low Stock</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">{{ s[1] }}</td>
+                                        <td>{{ s[2] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-
-        <div class="dept-panel" id="wh-stock">
-            <div class="card">
-                <h3>{{ tr('wh_stock') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('wh_item_name') }}</th>
-                        <th>{{ tr('wh_quantity') }}</th>
-                        <th>{{ tr('unit') }}</th>
-                    </tr>
-                    {% for s in stock_items %}
-                    <tr>
-                        <td>{{ s[0] }}</td>
-                        <td>{{ s[1] }}</td>
-                        <td>{{ s[2] }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-        </div>
-
     </div>
 </div>
 
 <script>
 (function() {
     var sidebar = document.getElementById('wh-sidebar');
+    if (!sidebar) sidebar = document.querySelector('.dept-sidebar-topbar');
+    if (!sidebar) return;
     var buttons = sidebar.querySelectorAll('button');
     var panels = document.querySelectorAll('.dept-panel');
     buttons.forEach(function(btn) {

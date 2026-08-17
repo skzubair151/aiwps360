@@ -9,11 +9,7 @@
             --primary: #00b4ff;
             --glow: rgba(0,180,255,0.5);
             --dark: #07090f;
-            --metal: #111827;
-            --metal-light: #1e2d45;
             --text: #e0eaff;
-            --text-dim: #607090;
-            --accent: #ff9800;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -26,7 +22,6 @@
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', 'Arial', sans-serif;
-            overflow: hidden;
             color: var(--text);
         }
 
@@ -39,234 +34,60 @@
             pointer-events: none;
         }
 
-        /* === TOP TITLE === */
-        #top-brand {
+        /* === LOGIN CONTAINER === */
+        .login-container {
             position: relative;
             z-index: 10;
-            text-align: center;
-            margin-bottom: 30px;
-            opacity: 0;
-            animation: fadeIn 1s ease forwards 0.5s;
-        }
-
-        #top-brand h1 {
-            font-size: 32px;
-            font-weight: 800;
-            letter-spacing: 6px;
-            color: var(--primary);
-            text-shadow: 0 0 20px var(--glow), 0 0 40px var(--glow);
-        }
-
-        #top-brand p {
-            font-size: 12px;
-            letter-spacing: 4px;
-            color: rgba(180, 200, 230, 0.8);
-            margin-top: 6px;
-            text-transform: uppercase;
-        }
-
-        /* === CONTAINER BOX === */
-        #container-wrap {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .erp-box {
-            width: 340px;
-            height: 220px;
-            position: relative;
-            opacity: 0;
-            animation: boxAppear 1s cubic-bezier(0.2,0.8,0.3,1) forwards 1s;
-        }
-
-        .box-body {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(145deg, var(--metal), #0d1525, var(--metal-light));
-            border: 1px solid rgba(0,180,255,0.25);
-            border-radius: 8px;
-            position: relative;
-            overflow: hidden;
-            box-shadow:
-                0 0 30px rgba(0,180,255,0.1),
-                inset 0 0 60px rgba(0,0,0,0.5);
-        }
-
-        /* LED strips */
-        .led-strip {
-            position: absolute;
-            left: 16px; right: 16px;
-            height: 3px;
-            border-radius: 2px;
-            background: var(--primary);
-            box-shadow: 0 0 10px var(--primary), 0 0 20px var(--glow);
-            opacity: 0;
-            animation: ledBlink 0.4s ease forwards 2s;
-        }
-
-        .led-top { top: 14px; }
-        .led-bottom { bottom: 14px; }
-        .led-bottom { animation-delay: 2.15s; }
-
-        /* Corner bolts */
-        .bolt {
-            position: absolute;
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            background: var(--metal-light);
-            border: 1px solid rgba(0,180,255,0.3);
-            box-shadow: 0 0 6px rgba(0,180,255,0);
-            transition: box-shadow 0.3s;
-        }
-
-        .bolt.tl { top: 8px; left: 8px; }
-        .bolt.tr { top: 8px; right: 8px; }
-        .bolt.bl { bottom: 8px; left: 8px; }
-        .bolt.br { bottom: 8px; right: 8px; }
-
-        .bolt.lit {
-            background: var(--primary);
-            box-shadow: 0 0 8px var(--primary), 0 0 16px var(--glow);
-        }
-
-        /* Box content */
-        .box-content {
-            position: absolute;
-            inset: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-        }
-
-        .box-logo {
-            font-size: 22px;
-            font-weight: 900;
-            letter-spacing: 4px;
-            color: var(--primary);
-            text-shadow: 0 0 15px var(--glow);
-        }
-
-        .box-sub {
-            font-size: 10px;
-            letter-spacing: 3px;
-            color: rgba(180, 200, 230, 0.8);
-            text-transform: uppercase;
-        }
-
-        .box-tagline {
-            font-size: 11px;
-            color: rgba(0,180,255,0.5);
-            letter-spacing: 1.5px; font-weight: 500;
-            margin-top: 4px;
-        }
-
-        /* Door overlay — splits left/right when opening */
-        .door {
-            position: absolute;
-            top: 0; bottom: 0;
-            width: 50%;
-            background: linear-gradient(145deg, #0d1525, var(--metal));
-            border: 1px solid rgba(0,180,255,0.15);
-            transition: transform 0.8s cubic-bezier(0.4,0,0.2,1);
-            z-index: 2;
-        }
-
-        .door.left  { left: 0;  border-radius: 8px 0 0 8px; }
-        .door.right { right: 0; border-radius: 0 8px 8px 0; }
-
-        .door-open .door.left  { transform: translateX(-100%); }
-        .door-open .door.right { transform: translateX(100%); }
-
-        /* Auth bar */
-        #auth-bar {
-            width: 340px;
-            opacity: 0;
-            animation: fadeIn 0.5s ease forwards 3s;
-        }
-
-        .auth-label {
-            font-size: 11px;
-            letter-spacing: 3px;
-            color: rgba(180, 200, 230, 0.8);
-            margin-bottom: 8px;
-            text-align: center;
-        }
-
-        .auth-track {
-            height: 4px;
-            background: rgba(0,180,255,0.1);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .auth-fill {
-            height: 100%;
-            width: 0%;
-            background: var(--primary);
-            box-shadow: 0 0 8px var(--primary);
-            border-radius: 2px;
-            transition: width 1s linear;
-        }
-
-        #auth-granted {
-            text-align: center;
-            font-size: 12px;
-            letter-spacing: 4px;
-            color: #00ff88;
-            text-shadow: 0 0 10px #00ff88;
-            margin-top: 8px;
-            opacity: 0;
-            font-weight: 700;
-        }
-
-        /* === LOGIN PANEL === */
-        #login-panel {
-            position: relative;
-            z-index: 10;
-            width: 340px;
-            background: rgba(10, 18, 35, 0.92);
-            border: 1px solid rgba(0,180,255,0.3);
-            border-radius: 12px;
-            padding: 36px 32px;
+            width: 100%;
+            max-width: 420px;
+            padding: 40px 30px;
+            background: rgba(10, 18, 35, 0.85);
+            border: 1px solid rgba(0,180,255,0.2);
+            border-radius: 16px;
             backdrop-filter: blur(20px);
-            box-shadow:
-                0 0 40px rgba(0,180,255,0.15),
-                0 20px 60px rgba(0,0,0,0.6);
-            opacity: 0;
-            transform: translateY(40px);
-            margin-top: 24px;
-            display: none;
+            box-shadow: 0 0 60px rgba(0,180,255,0.1), 0 20px 60px rgba(0,0,0,0.6);
         }
 
-        #login-panel.visible {
-            display: block;
-            animation: panelRise 0.8s cubic-bezier(0.2,0.8,0.3,1) forwards;
-        }
-
-        .panel-header {
+        /* === LOGO === */
+        .logo-container {
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 10px;
         }
 
-        .panel-header h2 {
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: 2px;
+        .logo-container img {
+            width: 280px;
+            height: 280px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+            filter: drop-shadow(0 0 30px rgba(0,180,255,0.2));
+        }
+
+        .logo-container h1 {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: 6px;
             color: var(--primary);
-            text-shadow: 0 0 10px var(--glow);
+            text-shadow: 0 0 20px var(--glow), 0 0 40px var(--glow);
+            margin-top: 5px;
         }
 
-        .panel-header p {
+        .logo-container .subtitle {
             font-size: 11px;
-            color: rgba(180, 200, 230, 0.8);
-            letter-spacing: 2px;
+            letter-spacing: 4px;
+            color: rgba(180, 200, 230, 0.6);
+            text-transform: uppercase;
             margin-top: 4px;
+        }
+
+        /* === LOGIN FORM === */
+        .login-form {
+            width: 100%;
+            margin-top: 20px;
         }
 
         .field-group {
@@ -278,26 +99,26 @@
             align-items: center;
             gap: 8px;
             font-size: 12px;
-            color: rgba(180, 200, 230, 0.8);
+            color: rgba(180, 200, 230, 0.7);
             letter-spacing: 2px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .field-input {
             width: 100%;
             padding: 12px 16px;
             background: rgba(0,180,255,0.05);
-            border: 1px solid rgba(0,180,255,0.2);
-            border-radius: 6px;
+            border: 1px solid rgba(0,180,255,0.15);
+            border-radius: 8px;
             color: var(--text);
             font-size: 14px;
             outline: none;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            transition: all 0.3s;
         }
 
         .field-input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(0,180,255,0.15);
+            box-shadow: 0 0 0 3px rgba(0,180,255,0.1);
         }
 
         .error-msg {
@@ -307,8 +128,8 @@
             margin-bottom: 12px;
             padding: 8px;
             background: rgba(255,68,68,0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(255,68,68,0.2);
+            border-radius: 6px;
+            border: 1px solid rgba(255,68,68,0.15);
         }
 
         .access-btn {
@@ -317,23 +138,35 @@
             background: linear-gradient(135deg, var(--primary), #0080cc);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 700;
             letter-spacing: 3px;
             cursor: pointer;
             margin-top: 8px;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(0,180,255,0.3);
+            box-shadow: 0 4px 20px rgba(0,180,255,0.25);
         }
 
         .access-btn:hover {
             background: linear-gradient(135deg, #00ccff, #0090dd);
-            box-shadow: 0 4px 25px rgba(0,180,255,0.5);
-            transform: translateY(-1px);
+            box-shadow: 0 4px 30px rgba(0,180,255,0.4);
+            transform: translateY(-2px);
         }
 
-        /* Lang toggle */
+        /* === FOOTER === */
+        .footer {
+            position: fixed;
+            bottom: 16px;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: 12px;
+            color: rgba(180, 200, 230, 0.4);
+            letter-spacing: 1.5px;
+            z-index: 10;
+        }
+
+        /* === LANG TOGGLE === */
         .lang-toggle {
             position: fixed;
             top: 20px;
@@ -342,102 +175,48 @@
         }
 
         .lang-toggle form button {
-            background: rgba(0,180,255,0.1);
-            border: 1px solid rgba(0,180,255,0.3);
+            background: rgba(0,180,255,0.08);
+            border: 1px solid rgba(0,180,255,0.2);
             color: var(--primary);
             padding: 6px 16px;
             border-radius: 20px;
             font-size: 12px;
-            letter-spacing: 1.5px; font-weight: 500;
+            letter-spacing: 1.5px;
             cursor: pointer;
             transition: all 0.3s;
         }
 
         .lang-toggle form button:hover {
-            background: rgba(0,180,255,0.2);
-            box-shadow: 0 0 12px rgba(0,180,255,0.3);
+            background: rgba(0,180,255,0.15);
+            box-shadow: 0 0 12px rgba(0,180,255,0.2);
         }
 
-        /* Dev credit */
-        .dev-credit {
-            position: fixed;
-            bottom: 16px;
-            left: 0; right: 0;
-            text-align: center;
-            font-size: 13px;
-            color: rgba(180, 200, 230, 0.8);
-            letter-spacing: 1.5px; font-weight: 500;
-            z-index: 10;
-        }
+        /* === RESPONSIVE === */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+                margin: 20px;
+                max-width: 100%;
+            }
 
-        /* Animations */
-        @keyframes fadeIn {
-            to { opacity: 1; }
-        }
+            .logo-container img {
+                width: 180px;
+                height: 180px;
+            }
 
-        @keyframes boxAppear {
-            from { opacity: 0; transform: scale(0.9); }
-            to   { opacity: 1; transform: scale(1); }
+            .logo-container h1 {
+                font-size: 22px;
+                letter-spacing: 4px;
+            }
         }
-
-        @keyframes ledBlink {
-            0%   { opacity: 0; }
-            30%  { opacity: 1; }
-            50%  { opacity: 0.3; }
-            70%  { opacity: 1; }
-            100% { opacity: 1; }
-        }
-
-        @keyframes panelRise {
-            from { opacity: 0; transform: translateY(40px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Scanline effect on the box */
-        .scanline {
-            position: absolute;
-            left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(to right, transparent, rgba(0,180,255,0.4), transparent);
-            animation: scan 3s linear infinite 2.5s;
-            pointer-events: none;
-            z-index: 3;
-        }
-
-        @keyframes scan {
-            0%   { top: 0%; opacity: 0; }
-            10%  { opacity: 1; }
-            90%  { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-
-        /* Skip button */
-        #skip-btn {
-            position: fixed;
-            bottom: 40px;
-            right: 24px;
-            z-index: 100;
-            background: transparent;
-            border: 1px solid var(--text-dim);
-            color: rgba(180, 200, 230, 0.8);
-            padding: 6px 16px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            letter-spacing: 1.5px; font-weight: 500;
-            transition: all 0.3s;
-            display: none;
-        }
-
-        #skip-btn:hover { color: var(--primary); border-color: var(--primary); }
     </style>
 </head>
 <body>
 
-<!-- Particle canvas -->
+<!-- Particle Canvas -->
 <canvas id="particles"></canvas>
 
-<!-- Language toggle -->
+<!-- Language Toggle -->
 <div class="lang-toggle">
     <form method="post" action="/toggle_login_lang">
         <button type="submit">
@@ -446,89 +225,44 @@
     </form>
 </div>
 
-<!-- Skip animation -->
-<button id="skip-btn" onclick="skipToLogin()">SKIP ▶</button>
-
-<!-- Startup screen -->
-<div id="startup-screen">
-    <!-- Top branding -->
-    <div id="top-brand">
+<!-- Login Container -->
+<div class="login-container">
+    <!-- Logo -->
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" 
+             alt="Logo" 
+             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>'">
         <h1>AIWPS360 ERP</h1>
-        <p>{% if login_lang == 'RU' %}Интегрированная система управления бизнесом{% elif login_lang == 'BOTH' %}Integrated Business Management System / Интегрированная система{% else %}Integrated Business Management System{% endif %}</p>
+        <div class="subtitle">{% if login_lang == 'RU' %}СИСТЕМА УПРАВЛЕНИЯ{% elif login_lang == 'BOTH' %}MANAGEMENT SYSTEM / СИСТЕМА УПРАВЛЕНИЯ{% else %}MANAGEMENT SYSTEM{% endif %}</div>
     </div>
 
-    <!-- Container wrap -->
-    <div id="container-wrap">
-        <div class="erp-box">
-            <div class="box-body" id="erp-box-body">
-                <div class="led-strip led-top"></div>
-                <div class="led-strip led-bottom"></div>
-                <div class="bolt tl" id="b-tl"></div>
-                <div class="bolt tr" id="b-tr"></div>
-                <div class="bolt bl" id="b-bl"></div>
-                <div class="bolt br" id="b-br"></div>
-                <div class="scanline"></div>
-                <div class="box-content">
-                    <div class="box-logo">AIWPS360 ERP</div>
-                    <div class="box-sub">{% if login_lang == 'RU' %}УМНЫЙ ЛОГИСТИЧЕСКИЙ ХАБ{% elif login_lang == 'BOTH' %}SMART LOGISTICS HUB / УМНЫЙ ЛОГИСТИЧЕСКИЙ ХАБ{% else %}SMART LOGISTICS HUB{% endif %}</div>
-                    <div class="box-tagline">Administration • Inventory • Warehouse • Production • Sales</div>
-                </div>
-                <!-- Doors overlay -->
-                <div class="door left" id="door-left"></div>
-                <div class="door right" id="door-right"></div>
-            </div>
-        </div>
+    <!-- Login Form -->
+    <div class="login-form">
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
 
-        <!-- Auth progress -->
-        <div id="auth-bar">
-            <div class="auth-label" id="auth-label">
-                {% if login_lang == 'RU' %}АУТЕНТИФИКАЦИЯ...{% elif login_lang == 'BOTH' %}AUTHENTICATING... / АУТЕНТИФИКАЦИЯ...{% else %}AUTHENTICATING...{% endif %}
+        <form method="post" action="/login">
+            <div class="field-group">
+                <div class="field-label">👤 {% if login_lang == 'RU' %}ПОЛЬЗОВАТЕЛЬ{% elif login_lang == 'BOTH' %}USER / ПОЛЬЗОВАТЕЛЬ{% else %}USERNAME{% endif %}</div>
+                <input type="text" name="username" class="field-input" required autocomplete="username" placeholder="Enter username">
             </div>
-            <div class="auth-track">
-                <div class="auth-fill" id="auth-fill"></div>
+
+            <div class="field-group">
+                <div class="field-label">🔒 {% if login_lang == 'RU' %}ПАРОЛЬ{% elif login_lang == 'BOTH' %}PASSWORD / ПАРОЛЬ{% else %}PASSWORD{% endif %}</div>
+                <input type="password" name="password" class="field-input" required autocomplete="current-password" placeholder="Enter password">
             </div>
-            <div id="auth-granted">
-                {% if login_lang == 'RU' %}✅ ДОСТУП ОТКРЫТ{% elif login_lang == 'BOTH' %}✅ ACCESS GRANTED / ДОСТУП ОТКРЫТ{% else %}✅ ACCESS GRANTED{% endif %}
-            </div>
-        </div>
+
+            <button type="submit" class="access-btn">
+                {% if login_lang == 'RU' %}⚡ ВОЙТИ{% elif login_lang == 'BOTH' %}⚡ LOGIN / ВОЙТИ{% else %}⚡ LOGIN{% endif %}
+            </button>
+        </form>
     </div>
 </div>
 
-<!-- Login panel (hidden until animation completes) -->
-<div id="login-panel">
-    <div class="panel-header">
-        <h2>🚀 AIWPS360 ERP</h2>
-        <p>{% if login_lang == 'RU' %}БЕЗОПАСНЫЙ ДОСТУП{% elif login_lang == 'BOTH' %}SECURE USER ACCESS / БЕЗОПАСНЫЙ ДОСТУП{% else %}SECURE USER ACCESS{% endif %}</p>
-    </div>
-
-    {% if error %}
-    <div class="error-msg">{{ error }}</div>
-    {% endif %}
-
-    <form method="post" action="/login">
-        <div class="field-group">
-            <div class="field-label">
-                👤 {% if login_lang == 'RU' %}ИМЯ ПОЛЬЗОВАТЕЛЯ{% elif login_lang == 'BOTH' %}USERNAME / ПОЛЬЗОВАТЕЛЬ{% else %}USERNAME{% endif %}
-            </div>
-            <input type="text" name="username" class="field-input" required autocomplete="username">
-        </div>
-
-        <div class="field-group">
-            <div class="field-label">
-                🔒 {% if login_lang == 'RU' %}ПАРОЛЬ{% elif login_lang == 'BOTH' %}PASSWORD / ПАРОЛЬ{% else %}PASSWORD{% endif %}
-            </div>
-            <input type="password" name="password" class="field-input" required autocomplete="current-password">
-        </div>
-
-        <button type="submit" class="access-btn">
-            {% if login_lang == 'RU' %}⚡ ВОЙТИ В СИСТЕМУ{% elif login_lang == 'BOTH' %}⚡ ACCESS SYSTEM / ВОЙТИ{% else %}⚡ ACCESS SYSTEM{% endif %}
-        </button>
-    </form>
-</div>
-
-<!-- Developer credit -->
-<div class="dev-credit">
-    AIWPS360 ERP &nbsp;|&nbsp; Developed by ZUBAIR &nbsp;|&nbsp; WhatsApp: +996990115990 &nbsp;|&nbsp; skzubair151@gmail.com
+<!-- Footer -->
+<div class="footer">
+    AIWPS360 ERP &nbsp;|&nbsp; Developed by ZUBAIR &nbsp;|&nbsp; 📱 +996990115990
 </div>
 
 <script>
@@ -575,58 +309,7 @@ function animateParticles() {
     requestAnimationFrame(animateParticles);
 }
 animateParticles();
-
-// === ANIMATION SEQUENCE ===
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-async function runStartup() {
-    document.getElementById('skip-btn').style.display = 'block';
-
-    await delay(2200); // bolts light up
-    ['b-tl','b-tr','b-bl','b-br'].forEach((id, i) => {
-        setTimeout(() => document.getElementById(id).classList.add('lit'), i * 120);
-    });
-
-    await delay(800); // progress bar fills
-    const fill = document.getElementById('auth-fill');
-    fill.style.width = '100%';
-
-    await delay(1100); // ACCESS GRANTED
-    const granted = document.getElementById('auth-granted');
-    granted.style.opacity = '1';
-    granted.style.transition = 'opacity 0.4s ease';
-
-    await delay(700); // doors open
-    document.getElementById('erp-box-body').classList.add('door-open');
-    document.getElementById('door-left').style.transform = 'translateX(-100%)';
-    document.getElementById('door-right').style.transform = 'translateX(100%)';
-
-    await delay(900); // startup screen fades, login panel rises
-    document.getElementById('startup-screen').style.opacity = '0';
-    document.getElementById('startup-screen').style.transition = 'opacity 0.5s ease';
-    await delay(500);
-    document.getElementById('startup-screen').style.display = 'none';
-    document.getElementById('skip-btn').style.display = 'none';
-
-    const panel = document.getElementById('login-panel');
-    panel.classList.add('visible');
-    panel.querySelector('input').focus();
-}
-
-function skipToLogin() {
-    document.getElementById('startup-screen').style.display = 'none';
-    document.getElementById('skip-btn').style.display = 'none';
-    const panel = document.getElementById('login-panel');
-    panel.classList.add('visible');
-    panel.querySelector('input').focus();
-}
-
-// If there's an error (bad login), skip straight to form
-{% if error %}
-window.addEventListener('load', () => skipToLogin());
-{% else %}
-window.addEventListener('load', () => runStartup());
-{% endif %}
 </script>
+
 </body>
 </html>

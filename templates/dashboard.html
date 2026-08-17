@@ -1,78 +1,247 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="card">
-    <h3>{{ tr('dash_summary') }}</h3>
-    <table>
-        <tr>
-            <td><strong>{{ tr('dash_today_prod') }}</strong></td>
-            <td>{{ today_total }} {{ tr('pcs') }}</td>
-        </tr>
-        <tr>
-            <td><strong>{{ tr('dash_total_emp') }}</strong></td>
-            <td>{{ total_employees }}</td>
-        </tr>
-        <tr>
-            <td><strong>{{ tr('dash_wh_stock') }}</strong></td>
-            <td>{{ stock['total_items'] }}</td>
-        </tr>
-    </table>
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="stat-card stat-card-primary">
+            <div class="stat-icon">
+                <i class="fas fa-industry"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ today_total }} <span>PCS</span></h3>
+                <p>{{ tr('dash_today_prod') }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="stat-card stat-card-success">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_employees }}</h3>
+                <p>{{ tr('dash_total_emp') }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="stat-card stat-card-warning">
+            <div class="stat-icon">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stock['total_items'] }}</h3>
+                <p>{{ tr('dash_wh_stock') }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6 col-md-6">
+        <div class="stat-card stat-card-danger">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_sterilized }}</h3>
+                <p>{{ tr('dash_sterilized') }}</p>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-    <h3>{{ tr('dash_prod_status') }}</h3>
-    <table>
-        <tr><th>{{ tr('dash_stage') }}</th><th>{{ tr('dash_total_qty') }}</th></tr>
-        <tr><td>{{ tr('dash_checking') }}</td><td>{{ total_checking }}</td></tr>
-        <tr><td>{{ tr('dash_assembly') }}</td><td>{{ total_assembly }}</td></tr>
-        <tr><td>{{ tr('dash_packing') }}</td><td>{{ total_packing }}</td></tr>
-        <tr><td>{{ tr('dash_sealing') }}</td><td>{{ total_sealing }}</td></tr>
-        <tr><td>{{ tr('dash_sterilized') }}</td><td>{{ total_sterilized }}</td></tr>
-    </table>
+<!-- Production Status & Chart -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-8 col-lg-7">
+        <div class="card card-modern">
+            <div class="card-header-modern">
+                <h5><i class="fas fa-chart-bar text-primary me-2"></i> {{ tr('dash_prod_status') }}</h5>
+            </div>
+            <div class="card-body-modern">
+                <div class="chart-container">
+                    <canvas id="productionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-lg-5">
+        <div class="card card-modern">
+            <div class="card-header-modern">
+                <h5><i class="fas fa-list-check text-success me-2"></i> Quick Stats</h5>
+            </div>
+            <div class="card-body-modern">
+                <div class="quick-stats">
+                    <div class="quick-stat-item">
+                        <span class="quick-stat-label">{{ tr('dash_checking') }}</span>
+                        <span class="quick-stat-value">{{ total_checking }}</span>
+                    </div>
+                    <div class="quick-stat-item">
+                        <span class="quick-stat-label">{{ tr('dash_assembly') }}</span>
+                        <span class="quick-stat-value">{{ total_assembly }}</span>
+                    </div>
+                    <div class="quick-stat-item">
+                        <span class="quick-stat-label">{{ tr('dash_packing') }}</span>
+                        <span class="quick-stat-value">{{ total_packing }}</span>
+                    </div>
+                    <div class="quick-stat-item">
+                        <span class="quick-stat-label">{{ tr('dash_sealing') }}</span>
+                        <span class="quick-stat-value">{{ total_sealing }}</span>
+                    </div>
+                    <div class="quick-stat-item">
+                        <span class="quick-stat-label">{{ tr('dash_sterilized') }}</span>
+                        <span class="quick-stat-value" style="color:#2e7d32;">{{ total_sterilized }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-    <h3>{{ tr('dash_wh_invoice') }}</h3>
-    <table>
-        <tr><th>{{ tr('dash_item_invoice') }}</th><th style="text-align:right;">{{ tr('dash_quantity') }}</th></tr>
-        {% for item_name, data in stock_by_item.items() %}
-            <tr style="background:#f5f5f5;">
-                <td colspan="2">
-                    <strong>{{ item_name }}</strong>
-                    {% if data.low_stock %}<span style="color:#c62828; font-weight:700;"> {{ tr('wh_low_stock_alert') }}</span>{% endif %}
-                </td>
-            </tr>
-            {% if data.entries %}
-                {% for invoice_number, qty in data.entries %}
-                <tr>
-                    <td style="padding-left:20px;">{{ tr('invoice') }}: {{ invoice_number }}</td>
-                    <td style="text-align:right;">{{ qty }}</td>
-                </tr>
-                {% endfor %}
-            {% else %}
-                <tr><td style="padding-left:20px; color:#999;">{{ tr('dash_no_stock') }}</td><td></td></tr>
-            {% endif %}
-            <tr style="font-weight:600; border-top:1px solid #333;{% if data.low_stock %} color:#c62828;{% endif %}">
-                <td style="text-align:right;">{{ tr('total') }}</td>
-                <td style="text-align:right;">{{ data.total }} {{ data.unit }}</td>
-            </tr>
-        {% endfor %}
-    </table>
+<!-- Warehouse Stock & Recent Activity -->
+<div class="row g-4">
+    <div class="col-xl-7">
+        <div class="card card-modern">
+            <div class="card-header-modern">
+                <h5><i class="fas fa-warehouse text-warning me-2"></i> {{ tr('dash_wh_invoice') }}</h5>
+            </div>
+            <div class="card-body-modern p-0">
+                <div class="table-responsive">
+                    <table class="table table-modern">
+                        <thead>
+                            <tr>
+                                <th>{{ tr('dash_item_invoice') }}</th>
+                                <th class="text-end">{{ tr('dash_quantity') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item_name, data in stock_by_item.items() %}
+                                <tr class="item-row">
+                                    <td colspan="2">
+                                        <strong>{{ item_name }}</strong>
+                                        {% if data.low_stock %}
+                                            <span class="badge bg-danger ms-2">LOW STOCK</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% if data.entries %}
+                                    {% for invoice_number, qty in data.entries %}
+                                    <tr>
+                                        <td style="padding-left:30px;">
+                                            <span class="text-muted">📄 {{ invoice_number }}</span>
+                                        </td>
+                                        <td class="text-end">{{ qty }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td style="padding-left:30px; color:#999;">{{ tr('dash_no_stock') }}</td>
+                                        <td></td>
+                                    </tr>
+                                {% endif %}
+                                <tr class="total-row">
+                                    <td style="text-align:right; font-weight:600;">{{ tr('total') }}</td>
+                                    <td style="text-align:right; font-weight:600; {% if data.low_stock %}color:#c62828;{% endif %}">
+                                        {{ data.total }} {{ data.unit }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="card card-modern">
+            <div class="card-header-modern">
+                <h5><i class="fas fa-clock text-info me-2"></i> {{ tr('dash_recent') }}</h5>
+            </div>
+            <div class="card-body-modern p-0">
+                <div class="table-responsive">
+                    <table class="table table-modern">
+                        <thead>
+                            <tr>
+                                <th>{{ tr('date') }}</th>
+                                <th>{{ tr('type') }}</th>
+                                <th>{{ tr('person') }}</th>
+                                <th class="text-end">{{ tr('dash_quantity') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in recent %}
+                            <tr>
+                                <td>{{ r[0] }}</td>
+                                <td><span class="badge bg-primary">{{ r[1] }}</span></td>
+                                <td>{{ r[2] }}</td>
+                                <td class="text-end">{{ r[3] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-    <h3>{{ tr('dash_recent') }}</h3>
-    <table>
-        <tr><th>{{ tr('date') }}</th><th>{{ tr('type') }}</th><th>{{ tr('person') }}</th><th>{{ tr('dash_quantity') }}</th></tr>
-        {% for r in recent %}
-        <tr>
-            <td>{{ r[0] }}</td>
-            <td>{{ r[1] }}</td>
-            <td>{{ r[2] }}</td>
-            <td>{{ r[3] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('productionChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Checking', 'Assembly', 'Packing', 'Sealing', 'Sterilized'],
+            datasets: [{
+                label: 'Total Quantity (PCS)',
+                data: [
+                    {{ total_checking }},
+                    {{ total_assembly }},
+                    {{ total_packing }},
+                    {{ total_sealing }},
+                    {{ total_sterilized }}
+                ],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(255, 206, 86, 0.8)',
+                    'rgba(255, 159, 64, 0.8)',
+                    'rgba(76, 175, 80, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(76, 175, 80, 1)'
+                ],
+                borderWidth: 2,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
 
 {% endblock %}

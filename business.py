@@ -1,6 +1,7 @@
-# PART 2: BUSINESS LOGIC LAYER (COMPLETE - WITH SALES + IV SET + BAG TRACKING)
+# PART 2: BUSINESS LOGIC LAYER (COMPLETE - WITH ASSEMBLY FIXED)
 from database import Database
 from datetime import datetime, timedelta
+import sqlite3
 
 class ProductionManager:
     def __init__(self):
@@ -96,7 +97,7 @@ class ProductionManager:
         return self.db.get_item_quantity(item_name)
     
     # ============================================
-    # PRODUCTION - WAREHOUSE TO PRODUCTION
+    # PRODUCTION - WAREHOUSE TO PRODUCTION (Transfer)
     # ============================================
     def transfer_to_production(self, item_name, quantity, unit, received_by, issued_by, transfer_date, remark=''):
         if not item_name or item_name.strip() == '':
@@ -109,7 +110,14 @@ class ProductionManager:
             return False, "Issued by name cannot be empty"
         
         item_name = item_name.strip().title()
-        available, unit_db = self.db.get_item_quantity(item_name)
+        
+        stock_result = self.db.get_item_quantity(item_name)
+        if stock_result is None:
+            available = 0
+            unit_db = 'PCS'
+        else:
+            available, unit_db = stock_result
+        
         if available < quantity:
             return False, f"❌ Not enough stock! Available: {available} {unit_db}, Requested: {quantity} {unit}"
         
@@ -154,117 +162,8 @@ class ProductionManager:
     def get_assembly_records(self):
         return self.db.get_assembly_records()
     
-    def get_today_assembly(self):
-        return self.db.get_today_assembly()
-    
-    # ============================================
-    # PRODUCTION - PACKING BEFORE SEAL
-    # ============================================
-    def add_packing_before_seal(self, pack_date, packer_name, lot_number, quantity, unit):
-        if not packer_name or packer_name.strip() == '':
-            return False, "Packer name cannot be empty"
-        if not lot_number or lot_number.strip() == '':
-            return False, "Lot number cannot be empty"
-        if quantity <= 0:
-            return False, "Quantity must be greater than 0"
-        packer_name = packer_name.strip().title()
-        lot_number = lot_number.strip().upper()
-        self.db.add_packing_before_seal(pack_date, packer_name, lot_number, quantity, unit)
-        return True, f"✅ LOT {lot_number} created: {quantity} {unit} packed by {packer_name}"
-    
-    def get_packing_before_seal(self):
-        return self.db.get_packing_before_seal()
-    
-    def get_all_lot_numbers(self):
-        return self.db.get_all_lot_numbers()
-    
-    def get_lot_info(self, lot_number):
-        return self.db.get_lot_info(lot_number)
-    
-    # ============================================
-    # PRODUCTION - SEALING
-    # ============================================
-    def add_sealing_record(self, seal_date, sealer_name, lot_number, sealing_qty, packing_qty):
-        if not sealer_name or sealer_name.strip() == '':
-            return False, "Sealer name cannot be empty"
-        if not lot_number or lot_number.strip() == '':
-            return False, "Lot number cannot be empty"
-        if sealing_qty <= 0:
-            return False, "Sealing quantity must be greater than 0"
-        if packing_qty <= 0:
-            return False, "Packing quantity must be greater than 0"
-        sealer_name = sealer_name.strip().title()
-        lot_number = lot_number.strip().upper()
-        lot_info = self.db.get_lot_info(lot_number)
-        if not lot_info:
-            return False, f"❌ Lot number '{lot_number}' not found!"
-        self.db.add_sealing_record(seal_date, sealer_name, lot_number, sealing_qty, packing_qty)
-        return True, f"✅ LOT {lot_number}: {sealing_qty} sealed by {sealer_name}"
-    
-    def get_sealing_records(self):
-        return self.db.get_sealing_records()
-    
-    # ============================================
-    # PRODUCTION - STERILIZATION
-    # ============================================
-    def add_sterilization_entry(self, entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark=''):
-        if not person_name or person_name.strip() == '':
-            return False, "Person name cannot be empty"
-        if not lot_number or lot_number.strip() == '':
-            return False, "Lot number cannot be empty"
-        if bag_quantity <= 0 and pcs_quantity <= 0:
-            return False, "At least one quantity must be greater than 0"
-        person_name = person_name.strip().title()
-        lot_number = lot_number.strip().upper()
-        self.db.add_sterilization_entry(entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark)
-        return True, f"✅ LOT {lot_number}: {bag_quantity} Bags / {pcs_quantity} Pcs entered for sterilization"
-    
-    def get_sterilization_entries(self):
-        return self.db.get_sterilization_entries()
-    
-    def add_sterilization_start(self, start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark=''):
-        if not operator_name or operator_name.strip() == '':
-            return False, "Operator name cannot be empty"
-        if not lot_number or lot_number.strip() == '':
-            return False, "Lot number cannot be empty"
-        operator_name = operator_name.strip().title()
-        lot_number = lot_number.strip().upper()
-        self.db.add_sterilization_start(start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark)
-        return True, f"✅ LOT {lot_number}: Sterilization started by {operator_name}"
-    
-    def add_sterilization_finish(self, finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark=''):
-        if not operator_name or operator_name.strip() == '':
-            return False, "Operator name cannot be empty"
-        if not lot_number or lot_number.strip() == '':
-            return False, "Lot number cannot be empty"
-        operator_name = operator_name.strip().title()
-        lot_number = lot_number.strip().upper()
-        self.db.add_sterilization_finish(finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark)
-        return True, f"✅ LOT {lot_number}: Sterilization finished by {operator_name}"
-    
-    def get_sterilization_starts(self):
-        return self.db.get_sterilization_starts()
-    
-    def get_sterilization_finishes(self):
-        return self.db.get_sterilization_finishes()
-    
-    # ============================================
-    # PRODUCTION - PACKING AFTER STERILE
-    # ============================================
-    def add_packing_after_sterile(self, pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark=''):
-        if not packer_name or packer_name.strip() == '':
-            return False, "Packer name cannot be empty"
-        if not lot_number or lot_number.strip() == '':
-            return False, "Lot number cannot be empty"
-        if bag_quantity <= 0 and pcs_quantity <= 0:
-            return False, "At least one quantity must be greater than 0"
-        packer_name = packer_name.strip().title()
-        lot_number = lot_number.strip().upper()
-        self.db.add_packing_after_sterile(pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark)
-        return True, f"✅ LOT {lot_number}: {bag_quantity} Bags / {pcs_quantity} Pcs packed after sterilization"
-    
-    def get_packing_after_sterile(self):
-        return self.db.get_packing_after_sterile()
+    def delete_assembly_record(self, record_id):
+        return self.db.delete_assembly_record(record_id)
     
     # ============================================
     # HR - EMPLOYEE MANAGEMENT
@@ -315,27 +214,16 @@ class ProductionManager:
         return self.db.set_language(language)
     
     # ============================================
-    # REPORTS
+    # REPORTS - TODAY'S ASSEMBLY
     # ============================================
-    def get_daily_production_report(self):
+    def get_today_assembly(self):
         today = datetime.now().strftime("%Y-%m-%d")
-        assembly = self.db.get_today_assembly()
-        packing = self.db.get_packing_before_seal()
-        sealing = self.db.get_sealing_records()
-        sterilization_entries = self.db.get_sterilization_entries()
-        today_packing = [p for p in packing if p[1] == today]
-        today_sealing = [s for s in sealing if s[1] == today]
-        today_sterilization = [s for s in sterilization_entries if s[1] == today]
-        return {
-            'date': today,
-            'assembly_total': assembly,
-            'packing_total': len(today_packing),
-            'sealing_total': len(today_sealing),
-            'sterilization_total': len(today_sterilization)
-        }
-    
-    def get_sterilized_goods_report(self):
-        return self.db.get_sterilized_goods_report()
+        conn = sqlite3.connect('production.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT SUM(quantity) FROM assembly_records WHERE assembly_date = ?", (today,))
+        result = cursor.fetchone()[0]
+        conn.close()
+        return result if result else 0
     
     # ============================================
     # SALES - CUSTOMERS
@@ -418,145 +306,6 @@ class ProductionManager:
 
     def get_invoice_by_number(self, invoice_number):
         return self.db.get_invoice_by_number(invoice_number)
-
-    # ============================================
-    # IV SET - ASSEMBLY
-    # ============================================
-    def get_iv_set_bom(self):
-        return self.db.get_iv_set_bom()
-
-    def check_iv_set_stock(self, quantity):
-        return self.db.check_iv_set_stock(quantity)
-
-    def assemble_iv_sets(self, quantity, assembler_name):
-        if quantity <= 0:
-            return False, "Quantity must be greater than 0"
-        if not assembler_name or assembler_name.strip() == '':
-            return False, "Assembler name cannot be empty"
-        
-        can_assemble, components, shortages = self.db.check_iv_set_stock(quantity)
-        if not can_assemble:
-            return False, f"❌ Not enough components! Shortages: {', '.join(shortages)}"
-        
-        self.db.deduct_iv_set_components(quantity)
-        batch_number = self.db.get_next_batch_number()
-        assembly_date = datetime.now().strftime("%Y-%m-%d")
-        
-        self.db.add_iv_set_assembly(
-            assembly_date, batch_number, quantity,
-            quantity, quantity, quantity, quantity, quantity,
-            assembler_name
-        )
-        return True, f"✅ Batch {batch_number}: {quantity} IV Sets assembled by {assembler_name}"
-
-    def get_iv_set_assembly_records(self):
-        return self.db.get_iv_set_assembly_records()
-
-    # ============================================
-    # IV SET - PACKING (Single Pack)
-    # ============================================
-    def pack_iv_sets(self, batch_number, packer_name):
-        if not batch_number:
-            return False, "Batch number cannot be empty"
-        if not packer_name or packer_name.strip() == '':
-            return False, "Packer name cannot be empty"
-        
-        records = self.db.get_iv_set_assembly_records()
-        batch = None
-        for r in records:
-            if r[2] == batch_number:
-                batch = r
-                break
-        
-        if not batch:
-            return False, f"❌ Batch {batch_number} not found!"
-        if batch[5] != 'Pending':
-            return False, f"❌ Batch {batch_number} already packed!"
-        
-        total_sets = batch[3]
-        available, unit = self.db.get_item_quantity('Single Pack Poly')
-        if available < total_sets:
-            return False, f"❌ Not enough Single Pack Poly! Available: {available}, Required: {total_sets}"
-        
-        lot_number = f"LOT{datetime.now().strftime('%Y%m%d')}-{batch_number}"
-        pack_date = datetime.now().strftime("%Y-%m-%d")
-        
-        self.db.add_iv_set_packing(pack_date, batch_number, total_sets, total_sets, packer_name, lot_number)
-        self.db.update_assembly_status(batch_number, 'Packed')
-        return True, f"✅ LOT {lot_number}: {total_sets} IV Sets packed by {packer_name}"
-
-    def get_iv_set_packing_records(self):
-        return self.db.get_iv_set_packing_records()
-
-    def get_pending_batches_for_packing(self):
-        return self.db.get_pending_batches_for_packing()
-
-    # ============================================
-    # IV SET - SEALING (Updated with Bags)
-    # ============================================
-    def seal_iv_sets(self, lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name):
-        if not lot_number:
-            return False, "LOT number cannot be empty"
-        if bag_quantity <= 0:
-            return False, "Bag quantity must be greater than 0"
-        if multi_packs_per_bag <= 0:
-            return False, "Multi packs per bag must be greater than 0"
-        if sets_per_multi_pack <= 0:
-            return False, "Sets per multi pack must be greater than 0"
-        if not sealer_name or sealer_name.strip() == '':
-            return False, "Sealer name cannot be empty"
-        
-        # Get packing details
-        records = self.db.get_iv_set_packing_records()
-        pack_record = None
-        for r in records:
-            if r[5] == lot_number:
-                pack_record = r
-                break
-        
-        if not pack_record:
-            return False, f"❌ LOT {lot_number} not found!"
-        
-        total_multi_packs = bag_quantity * multi_packs_per_bag
-        total_sets = total_multi_packs * sets_per_multi_pack
-        
-        # Check Multi Pack Poly stock
-        available, unit = self.db.get_item_quantity('Multi Pack Poly')
-        if available < total_multi_packs:
-            return False, f"❌ Not enough Multi Pack Poly! Available: {available}, Required: {total_multi_packs}"
-        
-        seal_date = datetime.now().strftime("%Y-%m-%d")
-        self.db.add_iv_set_sealing(seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name)
-        self.db.update_packing_status(lot_number, 'Sealed')
-        
-        return True, f"✅ {bag_quantity} Bags ({total_multi_packs} Multi Packs = {total_sets} PCS) sealed from LOT {lot_number}"
-
-    def get_iv_set_sealing_records(self):
-        return self.db.get_iv_set_sealing_records()
-
-    def get_pending_lots_for_sealing(self):
-        return self.db.get_pending_lots_for_sealing()
-
-    # ============================================
-    # IV SET - TUBE INVENTORY
-    # ============================================
-    def add_tube_inventory(self, supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by):
-        return self.db.add_tube_inventory(supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by)
-
-    def get_tube_inventory(self):
-        return self.db.get_tube_inventory()
-
-    # ============================================
-    # IV SET - DELETE METHODS
-    # ============================================
-    def delete_iv_set_assembly(self, record_id):
-        return self.db.delete_iv_set_assembly(record_id)
-
-    def delete_iv_set_packing(self, record_id):
-        return self.db.delete_iv_set_packing(record_id)
-
-    def delete_iv_set_sealing(self, record_id):
-        return self.db.delete_iv_set_sealing(record_id)
     
     # ============================================
     # DELETE RECORDS
@@ -569,18 +318,3 @@ class ProductionManager:
     
     def delete_checking_record(self, record_id):
         return self.db.delete_checking_record(record_id)
-    
-    def delete_assembly_record(self, record_id):
-        return self.db.delete_assembly_record(record_id)
-    
-    def delete_packing_before_seal(self, record_id):
-        return self.db.delete_packing_before_seal(record_id)
-    
-    def delete_sealing_record(self, record_id):
-        return self.db.delete_sealing_record(record_id)
-    
-    def delete_sterilization_entry(self, record_id):
-        return self.db.delete_sterilization_entry(record_id)
-    
-    def delete_packing_after_sterile(self, record_id):
-        return self.db.delete_packing_after_sterile(record_id)

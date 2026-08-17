@@ -1,112 +1,207 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="dept-layout">
-    <div class="dept-sidebar" id="set-sidebar">
-        <button data-target="s-appearance" class="active">{{ tr('set_appearance') }}</button>
-        <button data-target="s-backup">{{ tr('set_backup') }}</button>
-    </div>
-
-    <div class="dept-content">
-
-        <div class="dept-panel active" id="s-appearance">
-            <div class="card">
-                <h3>{{ tr('set_theme') }}</h3>
-                <form method="post" action="/settings/apply" enctype="multipart/form-data">
-                    <label>{{ tr('set_color_theme') }}</label>
-                    <select name="theme">
-                        <option value="industrial" {% if app_settings.theme == 'industrial' %}selected{% endif %}>Industrial (dark sidebar, orange accent)</option>
-                        <option value="ocean" {% if app_settings.theme == 'ocean' %}selected{% endif %}>Ocean (dark blue, cyan accent)</option>
-                        <option value="forest" {% if app_settings.theme == 'forest' %}selected{% endif %}>Forest (dark green, green accent)</option>
-                        <option value="minimal_light" {% if app_settings.theme == 'minimal_light' %}selected{% endif %}>Minimal Light (white sidebar, blue accent)</option>
-                    </select>
-
-                    <label>{{ tr('set_font_size') }}</label>
-                    <input type="number" name="font_size" min="10" max="24" value="{{ app_settings.font_size }}">
-
-                    <label>{{ tr('set_font_family') }}</label>
-                    <select name="font_family">
-                        {% for f in ['Segoe UI', 'Arial', 'Georgia', 'Verdana', 'Times New Roman', 'Courier New', 'Roboto', 'Tahoma'] %}
-                        <option value="{{ f }}" {% if app_settings.font_family == f %}selected{% endif %}>{{ f }}</option>
-                        {% endfor %}
-                    </select>
-
-                    <label>{{ tr('set_default_lang') }}</label>
-                    <select name="default_language">
-                        <option value="EN" {% if app_settings.default_language == 'EN' %}selected{% endif %}>English</option>
-                        <option value="RU" {% if app_settings.default_language == 'RU' %}selected{% endif %}>Russian</option>
-                    </select>
-                    <small style="color:#777;">Full EN/RU translation is coming in a later step — this just saves your preference for now.</small>
-
-                    <label>{{ tr('set_bg_image') }}</label>
-                    <input type="file" name="background_image" accept="image/*">
-                    <small style="color:#777;">Leave empty to keep current background.</small>
-
-                    <label>{{ tr('set_bg_trans') }}</label>
-                    <input type="range" name="background_opacity" min="10" max="100" value="{{ app_settings.background_opacity }}">
-
-                    <label style="display:flex; align-items:center; gap:8px;">
-                        <input type="checkbox" name="fit_to_window" style="width:auto;" {% if app_settings.fit_to_window == 'on' %}checked{% endif %}>
-                        {{ tr('set_fit_window') }}
-                    </label>
-
-                    <label>{{ tr('set_tab_view') }}</label>
-                    <select name="tab_view">
-                        <option value="sidebar" {% if app_settings.tab_view == 'sidebar' %}selected{% endif %}>{{ tr('set_sidebar') }}</option>
-                        <option value="topbar" {% if app_settings.tab_view == 'topbar' %}selected{% endif %}>{{ tr('set_topbar') }}</option>
-                    </select>
-
-                    <button type="submit">{{ tr('apply') }}</button>
-                </form>
-
-                {% if app_settings.background_image %}
-                <form method="post" action="/settings/remove_background" style="margin-top:10px;">
-                    <button type="submit" style="background:#777;">{{ tr('set_remove_bg') }}</button>
-                </form>
-                {% endif %}
-
-                <form method="post" action="/settings/reset_appearance" style="margin-top:10px;">
-                    <button type="submit" style="background:#c62828;">{{ tr('reset_default') }}</button>
-                </form>
-            </div>
+{% if app_settings.tab_view == 'topbar' %}
+    <div class="dept-layout-topbar">
+        <div class="dept-sidebar-topbar" id="set-sidebar">
+            <button data-target="s-appearance" class="active"><i class="fas fa-palette"></i> {{ tr('set_appearance') }}</button>
+            <button data-target="s-backup"><i class="fas fa-database"></i> {{ tr('set_backup') }}</button>
         </div>
-
-        <div class="dept-panel" id="s-backup">
-            <div class="card">
-                <h3>{{ tr('set_backup_folder') }}</h3>
-                <form method="post" action="/settings/set_backup_folder">
-                    <label>{{ tr('set_backup_folder_path') }}</label>
-                    <input type="text" name="backup_folder" value="{{ app_settings.backup_folder }}">
-                    <small style="color:#777;">Folder path (relative to the project folder) where backups are saved.</small>
-                    <button type="submit">{{ tr('set_save_folder') }}</button>
-                </form>
-            </div>
-
-            <div class="card">
-                <h3>{{ tr('set_backup_title') }}</h3>
-                <p style="margin-bottom:12px; color:#555;">{{ tr('set_backup_desc') }}</p>
-                <form method="post" action="/settings/backup">
-                    <button type="submit">{{ tr('set_create_backup') }}</button>
-                </form>
-            </div>
-
-            <div class="card">
-                <h3>{{ tr('set_restore_title') }}</h3>
-                <p style="margin-bottom:12px; color:#c62828;">{{ tr('set_restore_warning') }}</p>
-                <form method="post" action="/settings/restore" enctype="multipart/form-data">
-                    <label>{{ tr('set_choose_backup') }}</label>
-                    <input type="file" name="restore_file" accept=".db" required>
-                    <button type="submit" style="background:#c62828;">{{ tr('set_restore_btn') }}</button>
-                </form>
-            </div>
+        <div class="dept-content-topbar">
+{% else %}
+    <div class="dept-layout">
+        <div class="dept-sidebar" id="set-sidebar">
+            <button data-target="s-appearance" class="active"><i class="fas fa-palette"></i> {{ tr('set_appearance') }}</button>
+            <button data-target="s-backup"><i class="fas fa-database"></i> {{ tr('set_backup') }}</button>
         </div>
+        <div class="dept-content">
+{% endif %}
 
+            <!-- Appearance Panel -->
+            <div class="dept-panel active" id="s-appearance">
+                <div class="card card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-palette text-primary me-2"></i> {{ tr('set_theme') }}</h5>
+                    </div>
+                    <div class="card-body-modern">
+                        <form method="post" action="/settings/apply" enctype="multipart/form-data">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_color_theme') }}</label>
+                                        <select name="theme" class="form-select">
+                                            <option value="industrial" {% if app_settings.theme == 'industrial' %}selected{% endif %}>⚙️ Industrial (dark sidebar, orange accent)</option>
+                                            <option value="ocean" {% if app_settings.theme == 'ocean' %}selected{% endif %}>🌊 Ocean (dark blue, cyan accent)</option>
+                                            <option value="forest" {% if app_settings.theme == 'forest' %}selected{% endif %}>🌲 Forest (dark green, green accent)</option>
+                                            <option value="minimal_light" {% if app_settings.theme == 'minimal_light' %}selected{% endif %}>☀️ Minimal Light (white sidebar, blue accent)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_font_size') }}</label>
+                                        <input type="number" name="font_size" min="10" max="24" value="{{ app_settings.font_size }}" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_font_family') }}</label>
+                                        <select name="font_family" class="form-select">
+                                            {% for f in ['Segoe UI', 'Arial', 'Georgia', 'Verdana', 'Times New Roman', 'Courier New', 'Roboto', 'Tahoma'] %}
+                                            <option value="{{ f }}" {% if app_settings.font_family == f %}selected{% endif %}>{{ f }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_default_lang') }}</label>
+                                        <select name="default_language" class="form-select">
+                                            <option value="EN" {% if app_settings.default_language == 'EN' %}selected{% endif %}>🇬🇧 English</option>
+                                            <option value="RU" {% if app_settings.default_language == 'RU' %}selected{% endif %}>🇷🇺 Russian</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_bg_image') }}</label>
+                                        <input type="file" name="background_image" accept="image/*" class="form-control">
+                                        <small class="text-muted">Leave empty to keep current background.</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_bg_trans') }}</label>
+                                        <input type="range" name="background_opacity" min="10" max="100" value="{{ app_settings.background_opacity }}" class="form-range">
+                                        <div class="text-center" id="opacityDisplay">{{ app_settings.background_opacity }}%</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" name="fit_to_window" class="form-check-input" {% if app_settings.fit_to_window == 'on' %}checked{% endif %}>
+                                        <label class="form-check-label">{{ tr('set_fit_window') }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_tab_view') }}</label>
+                                        <select name="tab_view" class="form-select">
+                                            <option value="sidebar" {% if app_settings.tab_view == 'sidebar' %}selected{% endif %}>📋 {{ tr('set_sidebar') }}</option>
+                                            <option value="topbar" {% if app_settings.tab_view == 'topbar' %}selected{% endif %}>📊 {{ tr('set_topbar') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-check me-1"></i> {{ tr('apply') }}
+                            </button>
+                        </form>
+
+                        {% if app_settings.background_image %}
+                        <hr>
+                        <form method="post" action="/settings/remove_background" style="display:inline;">
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i> {{ tr('set_remove_bg') }}
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <hr>
+                        <form method="post" action="/settings/reset_appearance">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-undo me-1"></i> {{ tr('reset_default') }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup Panel -->
+            <div class="dept-panel" id="s-backup">
+                <div class="row g-4">
+                    <div class="col-xl-6">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-folder text-warning me-2"></i> {{ tr('set_backup_folder') }}</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/settings/set_backup_folder">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_backup_folder_path') }}</label>
+                                        <input type="text" name="backup_folder" value="{{ app_settings.backup_folder }}" class="form-control">
+                                        <small class="text-muted">Folder path (relative to the project folder) where backups are saved.</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-save me-1"></i> {{ tr('set_save_folder') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-6">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-database text-success me-2"></i> {{ tr('set_backup_title') }}</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <p class="text-muted">{{ tr('set_backup_desc') }}</p>
+                                <form method="post" action="/settings/backup">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-cloud-upload-alt me-1"></i> {{ tr('set_create_backup') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card card-modern mt-4">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-undo text-danger me-2"></i> {{ tr('set_restore_title') }}</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    {{ tr('set_restore_warning') }}
+                                </div>
+                                <form method="post" action="/settings/restore" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('set_choose_backup') }}</label>
+                                        <input type="file" name="restore_file" accept=".db" class="form-control" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-upload me-1"></i> {{ tr('set_restore_btn') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
 <script>
+// Background opacity display
+document.querySelector('input[name="background_opacity"]')?.addEventListener('input', function() {
+    document.getElementById('opacityDisplay').textContent = this.value + '%';
+});
+
 (function() {
     var sidebar = document.getElementById('set-sidebar');
+    if (!sidebar) sidebar = document.querySelector('.dept-sidebar-topbar');
+    if (!sidebar) return;
     var buttons = sidebar.querySelectorAll('button');
     var panels = document.querySelectorAll('.dept-panel');
     buttons.forEach(function(btn) {

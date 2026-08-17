@@ -1,4 +1,4 @@
-# PART 1: DATABASE LAYER (COMPLETE - WITH NEEDLE FIX)
+# PART 1: DATABASE LAYER (COMPLETE - WITH USERS + SALES + IV SET + TUBE TRACKING + BAG SEALING)
 import sqlite3
 from datetime import datetime
 import hashlib
@@ -251,8 +251,7 @@ class Database:
                 role TEXT DEFAULT 'Staff',
                 status TEXT DEFAULT 'Active',
                 created_date TEXT NOT NULL,
-                last_login DATETIME,
-                user_type TEXT DEFAULT 'Admin'
+                last_login DATETIME
             )
         ''')
         
@@ -342,20 +341,101 @@ class Database:
         ''')
         
         # ============================================
-        # DEFAULT VALUES
+        # IV SET MODULE TABLES
+        # ============================================
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS iv_set_bom (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                component_name TEXT NOT NULL,
+                quantity_per_set INTEGER NOT NULL DEFAULT 1,
+                unit TEXT DEFAULT 'PCS'
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS iv_set_assembly (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                assembly_date TEXT NOT NULL,
+                batch_number TEXT NOT NULL,
+                total_sets INTEGER NOT NULL,
+                chamber_used INTEGER NOT NULL,
+                needle_used INTEGER NOT NULL,
+                roller_used INTEGER NOT NULL,
+                latex_used INTEGER NOT NULL,
+                tub_used INTEGER NOT NULL,
+                assembler_name TEXT NOT NULL,
+                status TEXT DEFAULT 'Pending',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS iv_set_packing (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pack_date TEXT NOT NULL,
+                batch_number TEXT NOT NULL,
+                total_sets INTEGER NOT NULL,
+                single_pack_used INTEGER NOT NULL,
+                packer_name TEXT NOT NULL,
+                lot_number TEXT UNIQUE NOT NULL,
+                status TEXT DEFAULT 'Pending',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (batch_number) REFERENCES iv_set_assembly(batch_number)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS iv_set_sealing (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seal_date TEXT NOT NULL,
+                lot_number TEXT NOT NULL,
+                bag_quantity INTEGER NOT NULL,
+                multi_packs_per_bag INTEGER DEFAULT 6,
+                total_multi_packs INTEGER NOT NULL,
+                sets_per_multi_pack INTEGER DEFAULT 50,
+                total_sets INTEGER NOT NULL,
+                sealer_name TEXT NOT NULL,
+                status TEXT DEFAULT 'Completed',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (lot_number) REFERENCES iv_set_packing(lot_number)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS batch_counter (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_number INTEGER DEFAULT 0
+            )
+        ''')
+        
+        # ============================================
+        # TUBE TRACKING TABLE (Bags/Cartons)
+        # ============================================
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS tube_inventory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_date TEXT NOT NULL,
+                supplier_name TEXT NOT NULL,
+                invoice_number TEXT NOT NULL,
+                bag_quantity INTEGER NOT NULL,
+                pcs_per_bag INTEGER DEFAULT 100,
+                total_pcs INTEGER NOT NULL,
+                carton_quantity INTEGER DEFAULT 0,
+                pcs_per_carton INTEGER DEFAULT 500,
+                received_by TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # ============================================
+        # INSERT DEFAULT VALUES
         # ============================================
         cursor.execute("INSERT OR IGNORE INTO system_settings (setting_key, setting_value) VALUES ('language', 'EN')")
         cursor.execute("INSERT OR IGNORE INTO employee_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO customer_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO order_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO invoice_counter (id, last_number) VALUES (1, 0)")
-        
-        # Add user_type column if not exists
-        cursor.execute("PRAGMA table_info(users)")
-        columns = [col[1] for col in cursor.fetchall()]
-        if 'user_type' not in columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'Admin'")
-            conn.commit()
+        cursor.execute("INSERT OR IGNORE INTO batch_counter (id, last_number) VALUES (1, 0)")
         
         conn.commit()
         conn.close()
@@ -364,13 +444,6 @@ class Database:
         """Insert default data if tables are empty"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        
-        # ============================================
-        # FORCE RESET NEEDLE STOCK
-        # ============================================
-        cursor.execute("DELETE FROM warehouse_stock WHERE item_name LIKE '%Needle%'")
-        cursor.execute("INSERT OR IGNORE INTO warehouse_stock (item_name, quantity, unit) VALUES ('Needle 35mm', 1000, 'PCS')")
-        cursor.execute("INSERT OR IGNORE INTO warehouse_stock (item_name, quantity, unit) VALUES ('Needle 39mm', 1000, 'PCS')")
         
         # Default products
         cursor.execute("SELECT COUNT(*) FROM products")
@@ -394,30 +467,39 @@ class Database:
             )
         
         # Default admin user
-        cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'")
+        cursor.execute("SELECT COUNT(*) FROM users")
         if cursor.fetchone()[0] == 0:
             today = datetime.now().strftime("%Y-%m-%d")
             hashed = hashlib.sha256('admin123'.encode()).hexdigest()
             cursor.execute(
-                "INSERT INTO users (username, password, full_name, role, created_date, user_type) VALUES (?, ?, ?, ?, ?, ?)",
-                ('admin', hashed, 'Administrator', 'Admin', today, 'Admin')
+                "INSERT INTO users (username, password, full_name, role, created_date) VALUES (?, ?, ?, ?, ?)",
+                ('admin', hashed, 'Administrator', 'Admin', today)
             )
         
-        # Add default Viewer user
-        cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'viewer'")
+        # Default BOM
+        cursor.execute("SELECT COUNT(*) FROM iv_set_bom")
         if cursor.fetchone()[0] == 0:
-            today = datetime.now().strftime("%Y-%m-%d")
-            hashed = hashlib.sha256('viewer123'.encode()).hexdigest()
-            cursor.execute(
-                "INSERT INTO users (username, password, full_name, role, created_date, user_type) VALUES (?, ?, ?, ?, ?, ?)",
-                ('viewer', hashed, 'Viewer User', 'Staff', today, 'Viewer')
-            )
+            default_bom = [
+                ('Chamber', 1, 'PCS'),
+                ('Needle 35mm', 1, 'PCS'),
+                ('Roller', 1, 'PCS'),
+                ('Latex', 1, 'PCS'),
+                ('Tub', 1, 'PCS'),
+                ('Single Pack Poly', 1, 'PCS'),
+                ('Multi Pack Poly', 1, 'PCS')
+            ]
+            for item in default_bom:
+                cursor.execute(
+                    "INSERT INTO iv_set_bom (component_name, quantity_per_set, unit) VALUES (?, ?, ?)",
+                    (item[0], item[1], item[2])
+                )
         
         # Default counters
         cursor.execute("INSERT OR IGNORE INTO employee_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO customer_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO order_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO invoice_counter (id, last_number) VALUES (1, 0)")
+        cursor.execute("INSERT OR IGNORE INTO batch_counter (id, last_number) VALUES (1, 0)")
         
         conn.commit()
         conn.close()
@@ -425,14 +507,14 @@ class Database:
     # ============================================
     # USER MANAGEMENT
     # ============================================
-    def add_user(self, username, password, full_name, role='Staff', user_type='Viewer'):
+    def add_user(self, username, password, full_name, role='Staff'):
         today = datetime.now().strftime("%Y-%m-%d")
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "INSERT INTO users (username, password, full_name, role, created_date, user_type) VALUES (?, ?, ?, ?, ?, ?)",
-                (username, password, full_name, role, today, user_type)
+                "INSERT INTO users (username, password, full_name, role, created_date) VALUES (?, ?, ?, ?, ?)",
+                (username, password, full_name, role, today)
             )
             conn.commit()
             conn.close()
@@ -444,7 +526,7 @@ class Database:
     def get_all_users(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, full_name, role, status, last_login, user_type FROM users ORDER BY username")
+        cursor.execute("SELECT id, username, full_name, role, status, last_login FROM users ORDER BY username")
         results = cursor.fetchall()
         conn.close()
         return results
@@ -614,21 +696,18 @@ class Database:
         return results
     
     def get_item_quantity(self, item_name):
-        """Get quantity of a specific item (case-insensitive)"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        # Case-insensitive search
-        cursor.execute("SELECT quantity, unit FROM warehouse_stock WHERE LOWER(item_name) = LOWER(?)", (item_name,))
+        cursor.execute("SELECT quantity, unit FROM warehouse_stock WHERE item_name = ?", (item_name,))
         result = cursor.fetchone()
         conn.close()
         return result if result else (0, 'PCS')
     
     def deduct_warehouse_stock(self, item_name, quantity):
-        """Deduct stock from warehouse (case-insensitive)"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE LOWER(item_name) = LOWER(?)",
+            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE item_name = ?",
             (quantity, item_name)
         )
         conn.commit()
@@ -645,7 +724,7 @@ class Database:
             (item_name, quantity, unit, received_by, issued_by, transfer_date, remark)
         )
         cursor.execute(
-            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE LOWER(item_name) = LOWER(?)",
+            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE item_name = ?",
             (quantity, item_name)
         )
         conn.commit()
@@ -704,6 +783,15 @@ class Database:
         conn.close()
         return results
     
+    def get_today_assembly(self):
+        today = datetime.now().strftime("%Y-%m-%d")
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT SUM(quantity) FROM assembly_records WHERE assembly_date = ?", (today,))
+        result = cursor.fetchone()[0]
+        conn.close()
+        return result if result else 0
+    
     # ============================================
     # PRODUCTION - PACKING BEFORE SEAL
     # ============================================
@@ -725,6 +813,22 @@ class Database:
         results = cursor.fetchall()
         conn.close()
         return results
+    
+    def get_all_lot_numbers(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT lot_number FROM packing_before_seal ORDER BY lot_number")
+        results = cursor.fetchall()
+        conn.close()
+        return [r[0] for r in results]
+    
+    def get_lot_info(self, lot_number):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT pack_date, packer_name, quantity, unit FROM packing_before_seal WHERE lot_number = ?", (lot_number,))
+        result = cursor.fetchone()
+        conn.close()
+        return result
     
     # ============================================
     # PRODUCTION - SEALING
@@ -1149,6 +1253,203 @@ class Database:
         return result
 
     # ============================================
+    # IV SET - BATCH MANAGEMENT
+    # ============================================
+    def get_next_batch_number(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE batch_counter SET last_number = last_number + 1 WHERE id = 1")
+        cursor.execute("SELECT last_number FROM batch_counter WHERE id = 1")
+        next_num = cursor.fetchone()[0]
+        conn.commit()
+        conn.close()
+        return f"B{next_num:04d}"
+
+    def get_iv_set_bom(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT component_name, quantity_per_set, unit FROM iv_set_bom ORDER BY id")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def check_iv_set_stock(self, quantity):
+        """Check if all components are available for assembly"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        components = {
+            'Chamber': 0,
+            'Needle 35mm': 0,
+            'Roller': 0,
+            'Latex': 0,
+            'Tub': 0,
+            'Single Pack Poly': 0,
+            'Multi Pack Poly': 0
+        }
+        
+        cursor.execute("SELECT item_name, quantity FROM warehouse_stock")
+        stock = dict(cursor.fetchall())
+        
+        for comp in components:
+            components[comp] = stock.get(comp, 0)
+        
+        conn.close()
+        
+        required = quantity
+        can_assemble = True
+        shortages = []
+        
+        for comp in ['Chamber', 'Needle 35mm', 'Roller', 'Latex', 'Tub']:
+            if components.get(comp, 0) < required:
+                can_assemble = False
+                shortages.append(f"{comp}: {components.get(comp, 0)} available, {required} required")
+        
+        return can_assemble, components, shortages
+
+    def deduct_iv_set_components(self, quantity):
+        """Deduct components from warehouse stock"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        components = ['Chamber', 'Needle 35mm', 'Roller', 'Latex', 'Tub']
+        for comp in components:
+            cursor.execute(
+                "UPDATE warehouse_stock SET quantity = quantity - ? WHERE item_name = ?",
+                (quantity, comp)
+            )
+        
+        conn.commit()
+        conn.close()
+        return True
+
+    def add_iv_set_assembly(self, assembly_date, batch_number, total_sets, chamber_used, needle_used, roller_used, latex_used, tub_used, assembler_name):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO iv_set_assembly (assembly_date, batch_number, total_sets, chamber_used, needle_used, roller_used, latex_used, tub_used, assembler_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (assembly_date, batch_number, total_sets, chamber_used, needle_used, roller_used, latex_used, tub_used, assembler_name)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_iv_set_assembly_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, assembly_date, batch_number, total_sets, assembler_name, status FROM iv_set_assembly ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def add_iv_set_packing(self, pack_date, batch_number, total_sets, single_pack_used, packer_name, lot_number):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO iv_set_packing (pack_date, batch_number, total_sets, single_pack_used, packer_name, lot_number) VALUES (?, ?, ?, ?, ?, ?)",
+            (pack_date, batch_number, total_sets, single_pack_used, packer_name, lot_number)
+        )
+        cursor.execute(
+            "UPDATE warehouse_stock SET quantity = quantity - ? WHERE item_name = 'Single Pack Poly'",
+            (single_pack_used,)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_iv_set_packing_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, pack_date, batch_number, total_sets, packer_name, lot_number, status FROM iv_set_packing ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def add_iv_set_sealing(self, seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO iv_set_sealing (seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name)
+        )
+        cursor.execute(
+            "UPDATE warehouse_stock SET quantity = quantity - ? WHERE item_name = 'Multi Pack Poly'",
+            (total_multi_packs,)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_iv_set_sealing_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, seal_date, lot_number, bag_quantity, multi_packs_per_bag, total_multi_packs, sets_per_multi_pack, total_sets, sealer_name, status FROM iv_set_sealing ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def get_pending_batches_for_packing(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT batch_number, total_sets FROM iv_set_assembly WHERE status = 'Pending'")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def get_pending_lots_for_sealing(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT lot_number, total_sets FROM iv_set_packing WHERE status = 'Pending'")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    def update_assembly_status(self, batch_number, status):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE iv_set_assembly SET status = ? WHERE batch_number = ?", (status, batch_number))
+        conn.commit()
+        conn.close()
+        return True
+
+    def update_packing_status(self, lot_number, status):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE iv_set_packing SET status = ? WHERE lot_number = ?", (status, lot_number))
+        conn.commit()
+        conn.close()
+        return True
+
+    # ============================================
+    # TUBE INVENTORY (Bags/Cartons)
+    # ============================================
+    def add_tube_inventory(self, supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by):
+        entry_date = datetime.now().strftime("%Y-%m-%d")
+        total_pcs = (bag_quantity * pcs_per_bag) + (carton_quantity * pcs_per_carton)
+        
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO tube_inventory (entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by)
+        )
+        cursor.execute(
+            "UPDATE warehouse_stock SET quantity = quantity + ? WHERE item_name = 'Tub'",
+            (total_pcs,)
+        )
+        conn.commit()
+        conn.close()
+        return True
+
+    def get_tube_inventory(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, entry_date, supplier_name, invoice_number, bag_quantity, pcs_per_bag, total_pcs, carton_quantity, pcs_per_carton, received_by FROM tube_inventory ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+
+    # ============================================
     # DELETE RECORDS
     # ============================================
     def delete_raw_material_entry(self, record_id):
@@ -1211,6 +1512,30 @@ class Database:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM packing_after_sterile WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+
+    def delete_iv_set_assembly(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM iv_set_assembly WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+
+    def delete_iv_set_packing(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM iv_set_packing WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+
+    def delete_iv_set_sealing(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM iv_set_sealing WHERE id = ?", (record_id,))
         conn.commit()
         conn.close()
         return True

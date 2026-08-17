@@ -1,120 +1,217 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="dept-layout">
-    <div class="dept-sidebar" id="hr-sidebar">
-        <button data-target="hr-employees" class="active">{{ tr('hr_employees') }}</button>
-        <button data-target="hr-attendance">{{ tr('hr_attendance') }}</button>
-    </div>
-
-    <div class="dept-content">
-
-        <div class="dept-panel active" id="hr-employees">
-            <div class="card">
-                <h3>{{ tr('hr_register') }}</h3>
-                <form method="post" action="/hr/add_employee">
-                    <label>{{ tr('hr_full_name') }}</label>
-                    <input type="text" name="full_name" required>
-                    <label>{{ tr('hr_national_id') }}</label>
-                    <input type="text" name="national_id">
-                    <label>{{ tr('hr_mobile1') }}</label>
-                    <input type="text" name="mobile1">
-                    <label>{{ tr('hr_mobile2') }}</label>
-                    <input type="text" name="mobile2">
-                    <label>{{ tr('address') }}</label>
-                    <input type="text" name="address">
-                    <label>{{ tr('hr_blood_group') }}</label>
-                    <select name="blood_group">
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                    </select>
-                    <button type="submit">{{ tr('hr_register_btn') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('hr_employee_list') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('code') }}</th>
-                        <th>{{ tr('hr_full_name') }}</th>
-                        <th>{{ tr('hr_mobile_col') }}</th>
-                        <th>{{ tr('hr_blood_group') }}</th>
-                        <th>{{ tr('action') }}</th>
-                    </tr>
-                    {% for e in employees %}
-                    <tr>
-                        <td>{{ e[0] }}</td>
-                        <td>{{ e[1] }}</td>
-                        <td>{{ e[3] }}</td>
-                        <td>{{ e[6] }}</td>
-                        <td>
-                            <form method="post" action="/hr/delete_employee/{{ e[0] }}" style="display:inline;" onsubmit="return confirm('Delete this employee?')">
-                                <button type="submit" style="background:#c62828; padding:2px 8px; font-size:11px; border:none; border-radius:3px; color:white; cursor:pointer;">✕ Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
+{% if app_settings.tab_view == 'topbar' %}
+    <div class="dept-layout-topbar">
+        <div class="dept-sidebar-topbar" id="hr-sidebar">
+            <button data-target="hr-employees" class="active"><i class="fas fa-users"></i> {{ tr('hr_employees') }}</button>
+            <button data-target="hr-attendance"><i class="fas fa-clock"></i> {{ tr('hr_attendance') }}</button>
         </div>
-
-        <div class="dept-panel" id="hr-attendance">
-            <div class="card">
-                <h3>{{ tr('hr_mark_attendance') }}</h3>
-                <form method="post" action="/hr/mark_attendance">
-                    <label>{{ tr('hr_employee') }}</label>
-                    <select name="employee_code" required>
-                        <option value="">-- {{ tr('hr_select_emp') }} --</option>
-                        {% for e in employees %}
-                        <option value="{{ e[0] }}">{{ e[1] }} ({{ e[0] }})</option>
-                        {% endfor %}
-                    </select>
-                    <label>{{ tr('status') }}</label>
-                    <select name="status">
-                        <option value="Present">{{ tr('hr_present') }}</option>
-                        <option value="Absent">{{ tr('hr_absent') }}</option>
-                        <option value="Leave">{{ tr('hr_leave') }}</option>
-                    </select>
-                    <label>{{ tr('remark') }}</label>
-                    <input type="text" name="remark" placeholder="{{ tr('remark') }}">
-                    <button type="submit">{{ tr('hr_mark_btn') }}</button>
-                </form>
-            </div>
-            <div class="card">
-                <h3>{{ tr('hr_today_attendance') }}</h3>
-                <table>
-                    <tr>
-                        <th>{{ tr('date') }}</th>
-                        <th>{{ tr('hr_employee') }}</th>
-                        <th>{{ tr('hr_time') }}</th>
-                        <th>{{ tr('status') }}</th>
-                        <th>{{ tr('remark') }}</th>
-                    </tr>
-                    {% for a in attendance %}
-                    <tr>
-                        <td>{{ a[0] }}</td>
-                        <td>{{ a[1] }}</td>
-                        <td>{{ a[2] }}</td>
-                        <td>{{ a[3] }}</td>
-                        <td>{{ a[4] }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
+        <div class="dept-content-topbar">
+{% else %}
+    <div class="dept-layout">
+        <div class="dept-sidebar" id="hr-sidebar">
+            <button data-target="hr-employees" class="active"><i class="fas fa-users"></i> {{ tr('hr_employees') }}</button>
+            <button data-target="hr-attendance"><i class="fas fa-clock"></i> {{ tr('hr_attendance') }}</button>
         </div>
+        <div class="dept-content">
+{% endif %}
 
+            <!-- Employees Panel -->
+            <div class="dept-panel active" id="hr-employees">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-user-plus text-primary me-2"></i> {{ tr('hr_register') }}</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/hr/add_employee">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('hr_full_name') }}</label>
+                                        <input type="text" name="full_name" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('hr_national_id') }}</label>
+                                        <input type="text" name="national_id" class="form-control">
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">{{ tr('hr_mobile1') }}</label>
+                                                <input type="text" name="mobile1" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">{{ tr('hr_mobile2') }}</label>
+                                                <input type="text" name="mobile2" class="form-control">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('address') }}</label>
+                                        <input type="text" name="address" class="form-control">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('hr_blood_group') }}</label>
+                                        <select name="blood_group" class="form-select">
+                                            <option value="A+">A+</option>
+                                            <option value="A-">A-</option>
+                                            <option value="B+">B+</option>
+                                            <option value="B-">B-</option>
+                                            <option value="AB+">AB+</option>
+                                            <option value="AB-">AB-</option>
+                                            <option value="O+">O+</option>
+                                            <option value="O-">O-</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-plus me-1"></i> {{ tr('hr_register_btn') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-list me-2 text-primary"></i> {{ tr('hr_employee_list') }}</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>{{ tr('code') }}</th>
+                                                <th>{{ tr('hr_full_name') }}</th>
+                                                <th>{{ tr('hr_mobile_col') }}</th>
+                                                <th>{{ tr('hr_blood_group') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for e in employees %}
+                                            <tr>
+                                                <td><span class="badge bg-secondary">{{ e[0] }}</span></td>
+                                                <td>{{ e[1] }}</td>
+                                                <td>{{ e[3] }}</td>
+                                                <td>{{ e[6] }}</td>
+                                                {% if not is_viewer %}
+                                                <td>
+                                                    <form method="post" action="/hr/delete_employee/{{ e[0] }}" style="display:inline;" onsubmit="return confirm('Delete this employee?')">
+                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                                {% endif %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Panel -->
+            <div class="dept-panel" id="hr-attendance">
+                <div class="row g-4">
+                    <div class="col-xl-5">
+                        {% if not is_viewer %}
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-clock text-success me-2"></i> {{ tr('hr_mark_attendance') }}</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <form method="post" action="/hr/mark_attendance">
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('hr_employee') }}</label>
+                                        <select name="employee_code" class="form-select" required>
+                                            <option value="">-- {{ tr('hr_select_emp') }} --</option>
+                                            {% for e in employees %}
+                                            <option value="{{ e[0] }}">{{ e[1] }} ({{ e[0] }})</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('status') }}</label>
+                                        <select name="status" class="form-select">
+                                            <option value="Present">✅ {{ tr('hr_present') }}</option>
+                                            <option value="Absent">❌ {{ tr('hr_absent') }}</option>
+                                            <option value="Leave">🌴 {{ tr('hr_leave') }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ tr('remark') }}</label>
+                                        <input type="text" name="remark" class="form-control" placeholder="{{ tr('remark') }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check me-1"></i> {{ tr('hr_mark_btn') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card card-modern">
+                            <div class="card-header-modern">
+                                <h5><i class="fas fa-calendar-check me-2 text-success"></i> {{ tr('hr_today_attendance') }}</h5>
+                            </div>
+                            <div class="card-body-modern p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-modern">
+                                        <thead>
+                                            <tr>
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('hr_employee') }}</th>
+                                                <th>{{ tr('hr_time') }}</th>
+                                                <th>{{ tr('status') }}</th>
+                                                <th>{{ tr('remark') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for a in attendance %}
+                                            <tr>
+                                                <td>{{ a[0] }}</td>
+                                                <td>{{ a[1] }}</td>
+                                                <td>{{ a[2] }}</td>
+                                                <td>
+                                                    {% if a[3] == 'Present' %}
+                                                        <span class="badge bg-success">✅ Present</span>
+                                                    {% elif a[3] == 'Absent' %}
+                                                        <span class="badge bg-danger">❌ Absent</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning">🌴 Leave</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ a[4] }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
 <script>
 (function() {
     var sidebar = document.getElementById('hr-sidebar');
+    if (!sidebar) sidebar = document.querySelector('.dept-sidebar-topbar');
+    if (!sidebar) return;
     var buttons = sidebar.querySelectorAll('button');
     var panels = document.querySelectorAll('.dept-panel');
     buttons.forEach(function(btn) {

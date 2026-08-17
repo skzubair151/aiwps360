@@ -1,88 +1,236 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="dept-layout">
-    <div class="dept-sidebar" id="rep-sidebar">
-        <button data-target="r-summary" class="active">{{ tr('rep_summary') }}</button>
-        <button data-target="r-production">{{ tr('rep_production') }}</button>
-        <button data-target="r-warehouse">{{ tr('rep_warehouse') }}</button>
-        <button data-target="r-sterilization">{{ tr('rep_sterilization') }}</button>
-        <button data-target="r-attendance">{{ tr('rep_attendance') }}</button>
-    </div>
-
-    <div class="dept-content">
-
-        <div class="dept-panel active" id="r-summary">
-            <div class="card">
-                <h3>{{ tr('rep_summary') }}</h3>
-                <table>
-                    <tr><td><strong>{{ tr('rep_today_prod') }}</strong></td><td>{{ today_assembly }} {{ tr('pcs') }}</td></tr>
-                    <tr><td><strong>{{ tr('rep_wh_items') }}</strong></td><td>{{ stock['total_items'] }}</td></tr>
-                    <tr><td><strong>{{ tr('rep_sterilized') }}</strong></td><td>{{ sterilized['total_pcs'] }}</td></tr>
-                    <tr><td><strong>{{ tr('rep_total_emp') }}</strong></td><td>{{ total_employees }}</td></tr>
-                </table>
-            </div>
+{% if app_settings.tab_view == 'topbar' %}
+    <div class="dept-layout-topbar">
+        <div class="dept-sidebar-topbar" id="rep-sidebar">
+            <button data-target="r-summary" class="active"><i class="fas fa-chart-pie"></i> {{ tr('rep_summary') }}</button>
+            <button data-target="r-production"><i class="fas fa-industry"></i> {{ tr('rep_production') }}</button>
+            <button data-target="r-warehouse"><i class="fas fa-warehouse"></i> {{ tr('rep_warehouse') }}</button>
+            <button data-target="r-sterilization"><i class="fas fa-vial"></i> {{ tr('rep_sterilization') }}</button>
+            <button data-target="r-attendance"><i class="fas fa-user-clock"></i> {{ tr('rep_attendance') }}</button>
         </div>
-
-        <div class="dept-panel" id="r-production">
-            <div class="card">
-                <h3>{{ tr('rep_prod_report') }}</h3>
-                <table>
-                    <tr><th>{{ tr('type') }}</th><th>{{ tr('person') }}</th><th>{{ tr('quantity') }}</th><th>{{ tr('date') }}</th><th>{{ tr('lot') }}</th></tr>
-                    {% for r in production_report %}
-                    <tr><td>{{ r[0] }}</td><td>{{ r[1] }}</td><td>{{ r[2] }}</td><td>{{ r[3] }}</td><td>{{ r[4] }}</td></tr>
-                    {% endfor %}
-                </table>
-            </div>
+        <div class="dept-content-topbar">
+{% else %}
+    <div class="dept-layout">
+        <div class="dept-sidebar" id="rep-sidebar">
+            <button data-target="r-summary" class="active"><i class="fas fa-chart-pie"></i> {{ tr('rep_summary') }}</button>
+            <button data-target="r-production"><i class="fas fa-industry"></i> {{ tr('rep_production') }}</button>
+            <button data-target="r-warehouse"><i class="fas fa-warehouse"></i> {{ tr('rep_warehouse') }}</button>
+            <button data-target="r-sterilization"><i class="fas fa-vial"></i> {{ tr('rep_sterilization') }}</button>
+            <button data-target="r-attendance"><i class="fas fa-user-clock"></i> {{ tr('rep_attendance') }}</button>
         </div>
+        <div class="dept-content">
+{% endif %}
 
-        <div class="dept-panel" id="r-warehouse">
-            <div class="card">
-                <h3>{{ tr('rep_wh_report') }}</h3>
-                <table>
-                    <tr><th>{{ tr('item') }}</th><th>{{ tr('quantity') }}</th><th>{{ tr('unit') }}</th></tr>
-                    {% for s in stock['items'] %}
-                    <tr><td>{{ s[0] }}</td><td>{{ s[1] }}</td><td>{{ s[2] }}</td></tr>
-                    {% endfor %}
-                </table>
+            <!-- Summary Panel -->
+            <div class="dept-panel active" id="r-summary">
+                <div class="row g-4">
+                    <div class="col-xl-3 col-lg-6 col-md-6">
+                        <div class="stat-card stat-card-primary">
+                            <div class="stat-icon"><i class="fas fa-industry"></i></div>
+                            <div class="stat-info">
+                                <h3>{{ today_assembly }} <span>PCS</span></h3>
+                                <p>{{ tr('rep_today_prod') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-lg-6 col-md-6">
+                        <div class="stat-card stat-card-success">
+                            <div class="stat-icon"><i class="fas fa-boxes"></i></div>
+                            <div class="stat-info">
+                                <h3>{{ stock['total_items'] }}</h3>
+                                <p>{{ tr('rep_wh_items') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-lg-6 col-md-6">
+                        <div class="stat-card stat-card-warning">
+                            <div class="stat-icon"><i class="fas fa-syringe"></i></div>
+                            <div class="stat-info">
+                                <h3>{{ sterilized['total_pcs'] }}</h3>
+                                <p>{{ tr('rep_sterilized') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-lg-6 col-md-6">
+                        <div class="stat-card stat-card-danger">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <h3>{{ total_employees }}</h3>
+                                <p>{{ tr('rep_total_emp') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="dept-panel" id="r-sterilization">
-            <div class="card">
-                <h3>{{ tr('rep_ster_report') }}</h3>
-                <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('lot') }}</th><th>{{ tr('bags') }}</th><th>{{ tr('pcs') }}</th><th>{{ tr('person') }}</th></tr>
-                    {% for e in sterilization_entries %}
-                    <tr><td>{{ e[1] }}</td><td>{{ e[5] }}</td><td>{{ e[3] }}</td><td>{{ e[4] }}</td><td>{{ e[2] }}</td></tr>
-                    {% endfor %}
-                </table>
+            <!-- Production Panel -->
+            <div class="dept-panel" id="r-production">
+                <div class="card card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-industry text-primary me-2"></i> {{ tr('rep_prod_report') }}</h5>
+                    </div>
+                    <div class="card-body-modern p-0">
+                        <div class="table-responsive">
+                            <table class="table table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>{{ tr('type') }}</th>
+                                        <th>{{ tr('person') }}</th>
+                                        <th>{{ tr('quantity') }}</th>
+                                        <th>{{ tr('date') }}</th>
+                                        <th>{{ tr('lot') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for r in production_report %}
+                                    <tr>
+                                        <td><span class="badge bg-primary">{{ r[0] }}</span></td>
+                                        <td>{{ r[1] }}</td>
+                                        <td><strong>{{ r[2] }}</strong></td>
+                                        <td>{{ r[3] }}</td>
+                                        <td>{{ r[4] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="dept-panel" id="r-attendance">
-            <div class="card">
-                <h3>{{ tr('rep_att_report') }}</h3>
-                <form method="get" action="/reports">
-                    <label>{{ tr('date') }}</label>
-                    <input type="text" name="date" value="{{ selected_date }}" placeholder="YYYY-MM-DD">
-                    <button type="submit">{{ tr('show') }}</button>
-                </form>
-                <table>
-                    <tr><th>{{ tr('date') }}</th><th>{{ tr('hr_employee') }}</th><th>{{ tr('hr_time') }}</th><th>{{ tr('status') }}</th><th>{{ tr('remark') }}</th></tr>
-                    {% for a in attendance %}
-                    <tr><td>{{ a[0] }}</td><td>{{ a[1] }}</td><td>{{ a[2] }}</td><td>{{ a[3] }}</td><td>{{ a[4] }}</td></tr>
-                    {% endfor %}
-                </table>
+            <!-- Warehouse Panel -->
+            <div class="dept-panel" id="r-warehouse">
+                <div class="card card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-warehouse text-warning me-2"></i> {{ tr('rep_wh_report') }}</h5>
+                    </div>
+                    <div class="card-body-modern p-0">
+                        <div class="table-responsive">
+                            <table class="table table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>{{ tr('item') }}</th>
+                                        <th class="text-end">{{ tr('quantity') }}</th>
+                                        <th>{{ tr('unit') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for s in stock['items'] %}
+                                    <tr>
+                                        <td><i class="fas fa-box text-secondary me-2"></i> {{ s[0] }}</td>
+                                        <td class="text-end"><strong>{{ s[1] }}</strong></td>
+                                        <td>{{ s[2] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
+            <!-- Sterilization Panel -->
+            <div class="dept-panel" id="r-sterilization">
+                <div class="card card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-vial text-success me-2"></i> {{ tr('rep_ster_report') }}</h5>
+                    </div>
+                    <div class="card-body-modern p-0">
+                        <div class="table-responsive">
+                            <table class="table table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>{{ tr('date') }}</th>
+                                        <th>{{ tr('lot') }}</th>
+                                        <th>{{ tr('bags') }}</th>
+                                        <th>{{ tr('pcs') }}</th>
+                                        <th>{{ tr('person') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for e in sterilization_entries %}
+                                    <tr>
+                                        <td>{{ e[1] }}</td>
+                                        <td><span class="badge bg-primary">{{ e[5] }}</span></td>
+                                        <td>{{ e[3] }}</td>
+                                        <td><strong>{{ e[4] }}</strong></td>
+                                        <td>{{ e[2] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Panel -->
+            <div class="dept-panel" id="r-attendance">
+                <div class="card card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-user-clock text-danger me-2"></i> {{ tr('rep_att_report') }}</h5>
+                    </div>
+                    <div class="card-body-modern">
+                        <form method="get" action="/reports" class="mb-4">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">{{ tr('date') }}</label>
+                                    <input type="date" name="date" value="{{ selected_date }}" class="form-control">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-search me-1"></i> {{ tr('show') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="table-responsive">
+                            <table class="table table-modern">
+                                <thead>
+                                    <tr>
+                                        <th>{{ tr('date') }}</th>
+                                        <th>{{ tr('hr_employee') }}</th>
+                                        <th>{{ tr('hr_time') }}</th>
+                                        <th>{{ tr('status') }}</th>
+                                        <th>{{ tr('remark') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for a in attendance %}
+                                    <tr>
+                                        <td>{{ a[0] }}</td>
+                                        <td>{{ a[1] }}</td>
+                                        <td>{{ a[2] }}</td>
+                                        <td>
+                                            {% if a[3] == 'Present' %}
+                                                <span class="badge bg-success">✅ Present</span>
+                                            {% elif a[3] == 'Absent' %}
+                                                <span class="badge bg-danger">❌ Absent</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">🌴 Leave</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ a[4] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
 <script>
 (function() {
     var sidebar = document.getElementById('rep-sidebar');
+    if (!sidebar) sidebar = document.querySelector('.dept-sidebar-topbar');
+    if (!sidebar) return;
     var buttons = sidebar.querySelectorAll('button');
     var panels = document.querySelectorAll('.dept-panel');
     buttons.forEach(function(btn) {

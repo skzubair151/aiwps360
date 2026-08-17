@@ -16,18 +16,6 @@ manager = ProductionManager()
 auth = AuthManager()
 
 # ============================================
-# HELPER FUNCTIONS
-# ============================================
-def is_viewer():
-    return session.get('user', {}).get('user_type', 'Admin') == 'Viewer'
-
-def is_admin():
-    return session.get('user', {}).get('user_type', 'Admin') == 'Admin'
-
-def login_required():
-    return 'user' not in session
-
-# ============================================
 # LOW STOCK THRESHOLDS
 # ============================================
 def setup_thresholds_table():
@@ -123,10 +111,11 @@ def inject_settings():
     return {
         'app_settings': settings,
         'tr': get_tr(lang),
-        'current_lang': lang,
-        'datetime': datetime,
-        'is_viewer': is_viewer()
+        'current_lang': lang
     }
+
+def login_required():
+    return 'user' not in session
 
 # ============================================
 # AUTH ROUTES
@@ -183,10 +172,8 @@ def home():
 
     conn = sqlite3.connect('production.db')
     cursor = conn.cursor()
-    
     cursor.execute("SELECT SUM(quantity) FROM assembly_records WHERE assembly_date = ?", (today,))
     today_total = cursor.fetchone()[0] or 0
-    
     cursor.execute(
         "SELECT assembly_date, 'Assembly', assembler_name, quantity FROM assembly_records ORDER BY timestamp DESC LIMIT 5"
     )
@@ -194,19 +181,14 @@ def home():
 
     cursor.execute("SELECT SUM(quantity) FROM checking_records")
     total_checking = cursor.fetchone()[0] or 0
-    
     cursor.execute("SELECT SUM(quantity) FROM assembly_records")
     total_assembly = cursor.fetchone()[0] or 0
-    
     cursor.execute("SELECT SUM(quantity) FROM packing_before_seal")
     total_packing = cursor.fetchone()[0] or 0
-    
     cursor.execute("SELECT SUM(sealing_qty) FROM sealing_records")
     total_sealing = cursor.fetchone()[0] or 0
-    
     cursor.execute("SELECT SUM(pcs_quantity) FROM sterilization_finish")
     total_sterilized = cursor.fetchone()[0] or 0
-
     conn.close()
 
     total_employees = len(manager.get_all_employees())
@@ -245,8 +227,7 @@ def home():
         total_assembly=total_assembly,
         total_packing=total_packing,
         total_sealing=total_sealing,
-        total_sterilized=total_sterilized,
-        is_viewer=is_viewer()
+        total_sterilized=total_sterilized
     )
 
 # ============================================
@@ -266,17 +247,13 @@ def warehouse():
         products=products,
         stock_items=stock['items'],
         suppliers=suppliers,
-        raw_materials=raw_materials,
-        is_viewer=is_viewer()
+        raw_materials=raw_materials
     )
 
 @app.route('/warehouse/add_product', methods=['POST'])
 def add_product():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add products!', 'error')
-        return redirect(url_for('warehouse'))
     product_name = request.form.get('product_name', '')
     unit = request.form.get('unit', 'PCS')
     low_stock_qty = int(request.form.get('low_stock_qty', 10))
@@ -289,9 +266,6 @@ def add_product():
 def delete_product(product_name):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete products!', 'error')
-        return redirect(url_for('warehouse'))
     success, message = manager.delete_product(product_name)
     flash(message, 'success' if success else 'error')
     return redirect(url_for('warehouse'))
@@ -300,9 +274,6 @@ def delete_product(product_name):
 def add_supplier():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add suppliers!', 'error')
-        return redirect(url_for('warehouse'))
     supplier_name = request.form.get('supplier_name', '')
     supplier_address = request.form.get('supplier_address', '')
     contact_person = request.form.get('contact_person', '')
@@ -315,9 +286,6 @@ def add_supplier():
 def delete_supplier(supplier_name):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete suppliers!', 'error')
-        return redirect(url_for('warehouse'))
     success, message = manager.delete_supplier(supplier_name)
     flash(message, 'success' if success else 'error')
     return redirect(url_for('warehouse'))
@@ -326,16 +294,13 @@ def delete_supplier(supplier_name):
 def add_raw_material():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add raw materials!', 'error')
-        return redirect(url_for('warehouse'))
     supplier_name = request.form.get('supplier_name', '')
     invoice_number = request.form.get('invoice_number', '')
     item_name = request.form.get('item_name', '')
     quantity = int(request.form.get('quantity', 0))
     unit = request.form.get('unit', 'PCS')
     received_by = request.form.get('received_by', '')
-    entry_date = request.form.get('entry_date', datetime.now().strftime("%Y-%m-%d"))
+    entry_date = datetime.now().strftime("%Y-%m-%d")
     success, message = manager.add_raw_material_entry(
         supplier_name, '', entry_date, invoice_number,
         item_name, quantity, unit, received_by
@@ -347,9 +312,6 @@ def add_raw_material():
 def delete_raw_material(record_id):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete raw material entries!', 'error')
-        return redirect(url_for('warehouse'))
     manager.delete_raw_material_entry(record_id)
     flash('✅ Record deleted!', 'success')
     return redirect(url_for('warehouse'))
@@ -358,9 +320,6 @@ def delete_raw_material(record_id):
 def update_threshold():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot update thresholds!', 'error')
-        return redirect(url_for('warehouse'))
     item_name = request.form.get('item_name', '')
     threshold = int(request.form.get('threshold', 10))
     set_threshold(item_name, threshold)
@@ -378,12 +337,12 @@ def production():
     transfers = manager.get_transfers_to_production()
     checking_records = manager.get_checking_records()
     assembly_records = manager.get_assembly_records()
-    packing_records = manager.db.get_packing_before_seal()
-    sealing_records = manager.db.get_sealing_records()
-    sterilization_entries = manager.db.get_sterilization_entries()
-    sterilization_starts = manager.db.get_sterilization_starts()
-    sterilization_finishes = manager.db.get_sterilization_finishes()
-    packing_after_sterile = manager.db.get_packing_after_sterile()
+    packing_records = manager.get_packing_before_seal()
+    sealing_records = manager.get_sealing_records()
+    sterilization_entries = manager.get_sterilization_entries()
+    sterilization_starts = manager.get_sterilization_starts()
+    sterilization_finishes = manager.get_sterilization_finishes()
+    packing_after_sterile = manager.get_packing_after_sterile()
     return render_template(
         'production.html',
         active='production',
@@ -396,330 +355,180 @@ def production():
         sterilization_entries=sterilization_entries,
         sterilization_starts=sterilization_starts,
         sterilization_finishes=sterilization_finishes,
-        packing_after_sterile=packing_after_sterile,
-        is_viewer=is_viewer()
+        packing_after_sterile=packing_after_sterile
     )
 
 @app.route('/production/transfer', methods=['POST'])
 def production_transfer():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot transfer materials!', 'error')
-        return redirect(url_for('production'))
-    try:
-        item_name = request.form.get('item_name', '')
-        quantity = int(request.form.get('quantity', 0))
-        unit = request.form.get('unit', 'PCS')
-        received_by = request.form.get('received_by', '')
-        issued_by = request.form.get('issued_by', '')
-        transfer_date = request.form.get('transfer_date', datetime.now().strftime("%Y-%m-%d"))
-        
-        if not item_name:
-            flash('❌ Please select an item!', 'error')
-            return redirect(url_for('production'))
-        if quantity <= 0:
-            flash('❌ Quantity must be greater than 0!', 'error')
-            return redirect(url_for('production'))
-        if not received_by:
-            flash('❌ Please enter received by name!', 'error')
-            return redirect(url_for('production'))
-        if not issued_by:
-            flash('❌ Please enter issued by name!', 'error')
-            return redirect(url_for('production'))
-        
-        success, message = manager.transfer_to_production(item_name, quantity, unit, received_by, issued_by, transfer_date)
-        flash(message, 'success' if success else 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    item_name = request.form.get('item_name', '')
+    quantity = int(request.form.get('quantity', 0))
+    unit = request.form.get('unit', 'PCS')
+    received_by = request.form.get('received_by', '')
+    issued_by = request.form.get('issued_by', '')
+    transfer_date = datetime.now().strftime("%Y-%m-%d")
+    success, message = manager.transfer_to_production(item_name, quantity, unit, received_by, issued_by, transfer_date)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
 @app.route('/production/delete_transfer/<int:record_id>', methods=['POST'])
 def delete_transfer(record_id):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete transfer records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        manager.delete_transfer_to_production(record_id)
-        flash('✅ Transfer record deleted!', 'success')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    manager.delete_transfer_to_production(record_id)
+    flash('✅ Transfer record deleted!', 'success')
     return redirect(url_for('production'))
 
 @app.route('/production/checking', methods=['POST'])
 def production_checking():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add checking records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        item_name = request.form.get('item_name', '')
-        quantity = int(request.form.get('quantity', 0))
-        unit = request.form.get('unit', 'PCS')
-        checker_name = request.form.get('checker_name', '')
-        check_date = datetime.now().strftime("%Y-%m-%d")
-        success, message = manager.add_checking_record(check_date, item_name, quantity, unit, checker_name)
-        flash(message, 'success' if success else 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    item_name = request.form.get('item_name', '')
+    quantity = int(request.form.get('quantity', 0))
+    unit = request.form.get('unit', 'PCS')
+    checker_name = request.form.get('checker_name', '')
+    check_date = datetime.now().strftime("%Y-%m-%d")
+    success, message = manager.add_checking_record(check_date, item_name, quantity, unit, checker_name)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
 @app.route('/production/delete_checking/<int:record_id>', methods=['POST'])
 def delete_checking(record_id):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete checking records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        manager.delete_checking_record(record_id)
-        flash('✅ Checking record deleted!', 'success')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    manager.delete_checking_record(record_id)
+    flash('✅ Checking record deleted!', 'success')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - ASSEMBLY
-# ============================================
 @app.route('/production/assembly', methods=['POST'])
 def production_assembly():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add assembly records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        quantity = int(request.form.get('quantity', 0))
-        unit = request.form.get('unit', 'PCS')
-        assembler_name = request.form.get('assembler_name', '')
-        assembly_date = datetime.now().strftime("%Y-%m-%d")
-        success, message = manager.add_assembly_record(assembly_date, assembler_name, quantity, unit)
-        flash(message, 'success' if success else 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    quantity = int(request.form.get('quantity', 0))
+    unit = request.form.get('unit', 'PCS')
+    assembler_name = request.form.get('assembler_name', '')
+    assembly_date = datetime.now().strftime("%Y-%m-%d")
+    success, message = manager.add_assembly_record(assembly_date, assembler_name, quantity, unit)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
 @app.route('/production/delete_assembly/<int:record_id>', methods=['POST'])
 def delete_assembly(record_id):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete assembly records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        manager.delete_assembly_record(record_id)
-        flash('✅ Assembly record deleted!', 'success')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    manager.delete_assembly_record(record_id)
+    flash('✅ Assembly record deleted!', 'success')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - PACKING BEFORE SEAL (FIXED)
-# ============================================
 @app.route('/production/packing_before_seal', methods=['POST'])
 def production_packing_before_seal():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add packing records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        lot_number = request.form.get('lot_number', '')
-        quantity = int(request.form.get('quantity', 0))
-        unit = request.form.get('unit', 'PCS')
-        packer_name = request.form.get('packer_name', '')
-        pack_date = datetime.now().strftime("%Y-%m-%d")
-        success = manager.db.add_packing_before_seal(pack_date, packer_name, lot_number, quantity, unit)
-        if success:
-            flash(f'✅ LOT {lot_number}: {quantity} {unit} packed by {packer_name}', 'success')
-        else:
-            flash('❌ Failed to add packing record!', 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    lot_number = request.form.get('lot_number', '')
+    quantity = int(request.form.get('quantity', 0))
+    unit = request.form.get('unit', 'PCS')
+    packer_name = request.form.get('packer_name', '')
+    pack_date = datetime.now().strftime("%Y-%m-%d")
+    success, message = manager.add_packing_before_seal(pack_date, packer_name, lot_number, quantity, unit)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
 @app.route('/production/delete_packing/<int:record_id>', methods=['POST'])
 def delete_packing(record_id):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete packing records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        manager.db.delete_packing_before_seal(record_id)
-        flash('✅ Packing record deleted!', 'success')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    manager.delete_packing_before_seal(record_id)
+    flash('✅ Packing record deleted!', 'success')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - SEALING (FIXED)
-# ============================================
 @app.route('/production/sealing', methods=['POST'])
 def production_sealing():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add sealing records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        lot_number = request.form.get('lot_number', '')
-        sealing_qty = int(request.form.get('sealing_qty', 0))
-        packing_qty = int(request.form.get('packing_qty', 0))
-        sealer_name = request.form.get('sealer_name', '')
-        seal_date = datetime.now().strftime("%Y-%m-%d")
-        success = manager.db.add_sealing_record(seal_date, sealer_name, lot_number, sealing_qty, packing_qty)
-        if success:
-            flash(f'✅ LOT {lot_number}: {sealing_qty} sealed by {sealer_name}', 'success')
-        else:
-            flash('❌ Failed to add sealing record!', 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    lot_number = request.form.get('lot_number', '')
+    sealing_qty = int(request.form.get('sealing_qty', 0))
+    packing_qty = int(request.form.get('packing_qty', 0))
+    sealer_name = request.form.get('sealer_name', '')
+    seal_date = datetime.now().strftime("%Y-%m-%d")
+    success, message = manager.add_sealing_record(seal_date, sealer_name, lot_number, sealing_qty, packing_qty)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
 @app.route('/production/delete_sealing/<int:record_id>', methods=['POST'])
 def delete_sealing(record_id):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete sealing records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        manager.db.delete_sealing_record(record_id)
-        flash('✅ Sealing record deleted!', 'success')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    manager.delete_sealing_record(record_id)
+    flash('✅ Sealing record deleted!', 'success')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - STERILIZATION ENTRY (FIXED)
-# ============================================
 @app.route('/production/sterilization_entry', methods=['POST'])
 def sterilization_entry():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add sterilization entries!', 'error')
-        return redirect(url_for('production'))
-    try:
-        lot_number = request.form.get('lot_number', '')
-        bag_quantity = int(request.form.get('bag_quantity', 0))
-        pcs_quantity = int(request.form.get('pcs_quantity', 0))
-        person_name = request.form.get('person_name', '')
-        entry_date = datetime.now().strftime("%Y-%m-%d")
-        success = manager.db.add_sterilization_entry(entry_date, person_name, bag_quantity, pcs_quantity, lot_number)
-        if success:
-            flash(f'✅ LOT {lot_number}: {bag_quantity} Bags / {pcs_quantity} Pcs entered for sterilization', 'success')
-        else:
-            flash('❌ Failed to add sterilization entry!', 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    lot_number = request.form.get('lot_number', '')
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    pcs_quantity = int(request.form.get('pcs_quantity', 0))
+    person_name = request.form.get('person_name', '')
+    entry_date = datetime.now().strftime("%Y-%m-%d")
+    success, message = manager.add_sterilization_entry(entry_date, person_name, bag_quantity, pcs_quantity, lot_number)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
 @app.route('/production/delete_sterilization_entry/<int:record_id>', methods=['POST'])
 def delete_sterilization_entry(record_id):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete sterilization entries!', 'error')
-        return redirect(url_for('production'))
-    try:
-        manager.db.delete_sterilization_entry(record_id)
-        flash('✅ Sterilization entry deleted!', 'success')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    manager.delete_sterilization_entry(record_id)
+    flash('✅ Sterilization entry deleted!', 'success')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - STERILIZATION START (FIXED)
-# ============================================
 @app.route('/production/sterilization_start', methods=['POST'])
 def sterilization_start():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot start sterilization!', 'error')
-        return redirect(url_for('production'))
-    try:
-        lot_number = request.form.get('lot_number', '')
-        bag_quantity = int(request.form.get('bag_quantity', 0))
-        pcs_quantity = int(request.form.get('pcs_quantity', 0))
-        operator_name = request.form.get('operator_name', '')
-        start_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        success = manager.db.add_sterilization_start(start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number)
-        if success:
-            flash(f'✅ LOT {lot_number}: Sterilization started by {operator_name}', 'success')
-        else:
-            flash('❌ Failed to start sterilization!', 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    lot_number = request.form.get('lot_number', '')
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    pcs_quantity = int(request.form.get('pcs_quantity', 0))
+    operator_name = request.form.get('operator_name', '')
+    start_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    success, message = manager.add_sterilization_start(start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - STERILIZATION FINISH (FIXED)
-# ============================================
 @app.route('/production/sterilization_finish', methods=['POST'])
 def sterilization_finish():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot finish sterilization!', 'error')
-        return redirect(url_for('production'))
-    try:
-        lot_number = request.form.get('lot_number', '')
-        bag_quantity = int(request.form.get('bag_quantity', 0))
-        pcs_quantity = int(request.form.get('pcs_quantity', 0))
-        operator_name = request.form.get('operator_name', '')
-        finish_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        success = manager.db.add_sterilization_finish(finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number)
-        if success:
-            flash(f'✅ LOT {lot_number}: Sterilization finished by {operator_name}', 'success')
-        else:
-            flash('❌ Failed to finish sterilization!', 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    lot_number = request.form.get('lot_number', '')
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    pcs_quantity = int(request.form.get('pcs_quantity', 0))
+    operator_name = request.form.get('operator_name', '')
+    finish_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    success, message = manager.add_sterilization_finish(finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - PACKING AFTER STERILE (FIXED)
-# ============================================
 @app.route('/production/packing_after_sterile', methods=['POST'])
 def packing_after_sterile():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add packing after sterile records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        lot_number = request.form.get('lot_number', '')
-        bag_quantity = int(request.form.get('bag_quantity', 0))
-        pcs_quantity = int(request.form.get('pcs_quantity', 0))
-        packer_name = request.form.get('packer_name', '')
-        pack_date = datetime.now().strftime("%Y-%m-%d")
-        success = manager.db.add_packing_after_sterile(pack_date, packer_name, lot_number, bag_quantity, pcs_quantity)
-        if success:
-            flash(f'✅ LOT {lot_number}: {bag_quantity} Bags / {pcs_quantity} Pcs packed after sterilization', 'success')
-        else:
-            flash('❌ Failed to add packing after sterile record!', 'error')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    lot_number = request.form.get('lot_number', '')
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    pcs_quantity = int(request.form.get('pcs_quantity', 0))
+    packer_name = request.form.get('packer_name', '')
+    pack_date = datetime.now().strftime("%Y-%m-%d")
+    success, message = manager.add_packing_after_sterile(pack_date, packer_name, lot_number, bag_quantity, pcs_quantity)
+    flash(message, 'success' if success else 'error')
     return redirect(url_for('production'))
 
 @app.route('/production/delete_pack_after/<int:record_id>', methods=['POST'])
 def delete_pack_after(record_id):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete packing after sterile records!', 'error')
-        return redirect(url_for('production'))
-    try:
-        manager.db.delete_packing_after_sterile(record_id)
-        flash('✅ Packing after sterile record deleted!', 'success')
-    except Exception as e:
-        flash(f'❌ Error: {str(e)}', 'error')
+    manager.delete_packing_after_sterile(record_id)
+    flash('✅ Packing after sterile record deleted!', 'success')
     return redirect(url_for('production'))
 
 # ============================================
@@ -732,15 +541,12 @@ def hr():
     employees = manager.get_all_employees()
     today = datetime.now().strftime("%Y-%m-%d")
     attendance = manager.get_attendance(today)
-    return render_template('hr.html', active='hr', employees=employees, attendance=attendance, is_viewer=is_viewer())
+    return render_template('hr.html', active='hr', employees=employees, attendance=attendance)
 
 @app.route('/hr/add_employee', methods=['POST'])
 def add_employee():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add employees!', 'error')
-        return redirect(url_for('hr'))
     full_name = request.form.get('full_name', '')
     national_id = request.form.get('national_id', '')
     mobile1 = request.form.get('mobile1', '')
@@ -755,9 +561,6 @@ def add_employee():
 def delete_employee(employee_code):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete employees!', 'error')
-        return redirect(url_for('hr'))
     success, message = manager.delete_employee(employee_code)
     flash(message, 'success' if success else 'error')
     return redirect(url_for('hr'))
@@ -766,9 +569,6 @@ def delete_employee(employee_code):
 def mark_attendance():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot mark attendance!', 'error')
-        return redirect(url_for('hr'))
     employee_code = request.form.get('employee_code', '')
     status = request.form.get('status', 'Present')
     today = datetime.now().strftime("%Y-%m-%d")
@@ -796,17 +596,13 @@ def sales():
         orders=orders,
         invoices=invoices,
         products=products,
-        now=now,
-        is_viewer=is_viewer()
+        now=now
     )
 
 @app.route('/sales/add_customer', methods=['POST'])
 def add_customer():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot add customers!', 'error')
-        return redirect(url_for('sales'))
     customer_name = request.form.get('customer_name', '')
     email = request.form.get('email', '')
     phone = request.form.get('phone', '')
@@ -821,9 +617,6 @@ def add_customer():
 def delete_customer(customer_code):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete customers!', 'error')
-        return redirect(url_for('sales'))
     success, message = manager.delete_customer(customer_code)
     flash(message, 'success' if success else 'error')
     return redirect(url_for('sales'))
@@ -832,9 +625,6 @@ def delete_customer(customer_code):
 def create_order():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot create orders!', 'error')
-        return redirect(url_for('sales'))
     customer_code = request.form.get('customer_code', '')
     order_date = request.form.get('order_date', '')
     delivery_date = request.form.get('delivery_date', '')
@@ -859,9 +649,6 @@ def create_order():
 def update_order_status():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot update order status!', 'error')
-        return redirect(url_for('sales'))
     order_number = request.form.get('order_number', '')
     status = request.form.get('status', '')
     manager.update_order_status(order_number, status)
@@ -872,9 +659,6 @@ def update_order_status():
 def delete_order(order_number):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete orders!', 'error')
-        return redirect(url_for('sales'))
     manager.delete_order(order_number)
     flash('✅ Order deleted!', 'success')
     return redirect(url_for('sales'))
@@ -883,9 +667,6 @@ def delete_order(order_number):
 def create_invoice():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot create invoices!', 'error')
-        return redirect(url_for('sales'))
     order_number = request.form.get('order_number', '')
     invoice_date = request.form.get('invoice_date', datetime.now().strftime("%Y-%m-%d"))
     due_date = request.form.get('due_date', '')
@@ -898,9 +679,6 @@ def create_invoice():
 def record_payment():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot record payments!', 'error')
-        return redirect(url_for('sales'))
     invoice_number = request.form.get('invoice_number', '')
     amount = float(request.form.get('amount', 0))
     if amount <= 0:
@@ -914,9 +692,6 @@ def record_payment():
 def delete_invoice(invoice_number):
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot delete invoices!', 'error')
-        return redirect(url_for('sales'))
     conn = sqlite3.connect('production.db')
     cursor = conn.cursor()
     cursor.execute("DELETE FROM invoices WHERE invoice_number = ?", (invoice_number,))
@@ -924,6 +699,114 @@ def delete_invoice(invoice_number):
     conn.close()
     flash('✅ Invoice deleted!', 'success')
     return redirect(url_for('sales'))
+
+# ============================================
+# IV SET ROUTES
+# ============================================
+@app.route('/iv_set')
+def iv_set():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    bom = manager.get_iv_set_bom()
+    assembly_records = manager.get_iv_set_assembly_records()
+    packing_records = manager.get_iv_set_packing_records()
+    sealing_records = manager.get_iv_set_sealing_records()
+    pending_batches = manager.get_pending_batches_for_packing()
+    pending_lots = manager.get_pending_lots_for_sealing()
+    tube_inventory = manager.get_tube_inventory()
+    
+    return render_template(
+        'iv_set.html',
+        active='iv_set',
+        bom=bom,
+        assembly_records=assembly_records,
+        packing_records=packing_records,
+        sealing_records=sealing_records,
+        pending_batches=pending_batches,
+        pending_lots=pending_lots,
+        tube_inventory=tube_inventory
+    )
+
+@app.route('/iv_set/assemble', methods=['POST'])
+def iv_set_assemble():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    quantity = int(request.form.get('quantity', 0))
+    assembler_name = request.form.get('assembler_name', '')
+    
+    success, message = manager.assemble_iv_sets(quantity, assembler_name)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('iv_set'))
+
+@app.route('/iv_set/pack', methods=['POST'])
+def iv_set_pack():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    batch_number = request.form.get('batch_number', '')
+    packer_name = request.form.get('packer_name', '')
+    
+    success, message = manager.pack_iv_sets(batch_number, packer_name)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('iv_set'))
+
+@app.route('/iv_set/seal', methods=['POST'])
+def iv_set_seal():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    lot_number = request.form.get('lot_number', '')
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    multi_packs_per_bag = int(request.form.get('multi_packs_per_bag', 6))
+    sets_per_multi_pack = int(request.form.get('sets_per_multi_pack', 50))
+    sealer_name = request.form.get('sealer_name', '')
+    
+    success, message = manager.seal_iv_sets(lot_number, bag_quantity, multi_packs_per_bag, sets_per_multi_pack, sealer_name)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('iv_set'))
+
+@app.route('/iv_set/add_tube', methods=['POST'])
+def add_tube_inventory():
+    if login_required():
+        return redirect(url_for('login'))
+    
+    supplier_name = request.form.get('supplier_name', '')
+    invoice_number = request.form.get('invoice_number', '')
+    bag_quantity = int(request.form.get('bag_quantity', 0))
+    pcs_per_bag = int(request.form.get('pcs_per_bag', 100))
+    carton_quantity = int(request.form.get('carton_quantity', 0))
+    pcs_per_carton = int(request.form.get('pcs_per_carton', 500))
+    received_by = request.form.get('received_by', '')
+    
+    success, message = manager.add_tube_inventory(supplier_name, invoice_number, bag_quantity, pcs_per_bag, carton_quantity, pcs_per_carton, received_by)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('iv_set'))
+
+@app.route('/iv_set/delete_assembly/<int:record_id>', methods=['POST'])
+def iv_set_delete_assembly(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_iv_set_assembly(record_id)
+    flash('✅ Assembly record deleted!', 'success')
+    return redirect(url_for('iv_set'))
+
+@app.route('/iv_set/delete_packing/<int:record_id>', methods=['POST'])
+def iv_set_delete_packing(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_iv_set_packing(record_id)
+    flash('✅ Packing record deleted!', 'success')
+    return redirect(url_for('iv_set'))
+
+@app.route('/iv_set/delete_sealing/<int:record_id>', methods=['POST'])
+def iv_set_delete_sealing(record_id):
+    if login_required():
+        return redirect(url_for('login'))
+    manager.delete_iv_set_sealing(record_id)
+    flash('✅ Sealing record deleted!', 'success')
+    return redirect(url_for('iv_set'))
 
 # ============================================
 # REPORTS ROUTES
@@ -935,11 +818,10 @@ def reports():
     selected_date = request.args.get('date', datetime.now().strftime("%Y-%m-%d"))
     today_assembly = manager.get_today_assembly()
     stock = manager.get_warehouse_stock()
-    sterilized = manager.db.get_sterilized_goods_report()
+    sterilized = manager.get_sterilized_goods_report()
     total_employees = len(manager.get_all_employees())
-    sterilization_entries = manager.db.get_sterilization_entries()
+    sterilization_entries = manager.get_sterilization_entries()
     attendance = manager.get_attendance(selected_date)
-    
     conn = sqlite3.connect('production.db')
     cursor = conn.cursor()
     cursor.execute(
@@ -955,7 +837,6 @@ def reports():
     )
     production_report += cursor.fetchall()
     conn.close()
-    
     return render_template(
         'reports.html',
         active='reports',
@@ -966,8 +847,7 @@ def reports():
         sterilization_entries=sterilization_entries,
         attendance=attendance,
         production_report=production_report,
-        selected_date=selected_date,
-        is_viewer=is_viewer()
+        selected_date=selected_date
     )
 
 # ============================================
@@ -977,15 +857,12 @@ def reports():
 def settings():
     if login_required():
         return redirect(url_for('login'))
-    return render_template('settings.html', active='settings', is_viewer=is_viewer())
+    return render_template('settings.html', active='settings')
 
 @app.route('/settings/apply', methods=['POST'])
 def settings_apply():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot change settings!', 'error')
-        return redirect(url_for('settings'))
     set_setting('font_size', request.form.get('font_size', '14'))
     set_setting('font_family', request.form.get('font_family', 'Segoe UI'))
     set_setting('default_language', request.form.get('default_language', 'EN'))
@@ -1005,9 +882,6 @@ def settings_apply():
 def settings_remove_background():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot remove background!', 'error')
-        return redirect(url_for('settings'))
     set_setting('background_image', '')
     flash('✅ Background image removed!', 'success')
     return redirect(url_for('settings'))
@@ -1016,9 +890,6 @@ def settings_remove_background():
 def settings_set_backup_folder():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot change backup folder!', 'error')
-        return redirect(url_for('settings'))
     set_setting('backup_folder', request.form.get('backup_folder', 'static/uploads'))
     flash('✅ Backup folder saved!', 'success')
     return redirect(url_for('settings'))
@@ -1027,9 +898,6 @@ def settings_set_backup_folder():
 def settings_reset_appearance():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot reset appearance!', 'error')
-        return redirect(url_for('settings'))
     for key, value in DEFAULT_SETTINGS.items():
         set_setting(key, value)
     flash('✅ Appearance reset to default!', 'success')
@@ -1039,9 +907,6 @@ def settings_reset_appearance():
 def settings_backup():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot create backups!', 'error')
-        return redirect(url_for('settings'))
     import shutil
     settings_now = get_all_settings()
     backup_folder = settings_now.get('backup_folder', 'static/uploads')
@@ -1056,9 +921,6 @@ def settings_backup():
 def settings_restore():
     if login_required():
         return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot restore database!', 'error')
-        return redirect(url_for('settings'))
     restore_file = request.files.get('restore_file')
     if not restore_file or not restore_file.filename.endswith('.db'):
         flash('❌ Please choose a valid .db backup file!', 'error')
