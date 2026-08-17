@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
 from business import ProductionManager
 from auth_manager import AuthManager
 from translations import get_tr
 from datetime import datetime
 import sqlite3
 import os
+import io
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -75,7 +76,9 @@ DEFAULT_SETTINGS = {
     'fit_to_window': 'off',
     'tab_view': 'sidebar',
     'backup_folder': 'static/uploads',
-    'theme': 'industrial'
+    'theme': 'industrial',
+    'email_address': '',
+    'email_alert_to': ''
 }
 
 def setup_settings_table():
@@ -481,9 +484,6 @@ def delete_checking(record_id):
         flash(f'❌ Error: {str(e)}', 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - ASSEMBLY
-# ============================================
 @app.route('/production/assembly', methods=['POST'])
 def production_assembly():
     if login_required():
@@ -516,9 +516,6 @@ def delete_assembly(record_id):
         flash(f'❌ Error: {str(e)}', 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - PACKING BEFORE SEAL (FIXED)
-# ============================================
 @app.route('/production/packing_before_seal', methods=['POST'])
 def production_packing_before_seal():
     if login_required():
@@ -555,9 +552,6 @@ def delete_packing(record_id):
         flash(f'❌ Error: {str(e)}', 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - SEALING (FIXED)
-# ============================================
 @app.route('/production/sealing', methods=['POST'])
 def production_sealing():
     if login_required():
@@ -594,9 +588,6 @@ def delete_sealing(record_id):
         flash(f'❌ Error: {str(e)}', 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - STERILIZATION ENTRY (FIXED)
-# ============================================
 @app.route('/production/sterilization_entry', methods=['POST'])
 def sterilization_entry():
     if login_required():
@@ -633,9 +624,6 @@ def delete_sterilization_entry(record_id):
         flash(f'❌ Error: {str(e)}', 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - STERILIZATION START (FIXED)
-# ============================================
 @app.route('/production/sterilization_start', methods=['POST'])
 def sterilization_start():
     if login_required():
@@ -658,9 +646,6 @@ def sterilization_start():
         flash(f'❌ Error: {str(e)}', 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - STERILIZATION FINISH (FIXED)
-# ============================================
 @app.route('/production/sterilization_finish', methods=['POST'])
 def sterilization_finish():
     if login_required():
@@ -683,9 +668,6 @@ def sterilization_finish():
         flash(f'❌ Error: {str(e)}', 'error')
     return redirect(url_for('production'))
 
-# ============================================
-# PRODUCTION - PACKING AFTER STERILE (FIXED)
-# ============================================
 @app.route('/production/packing_after_sterile', methods=['POST'])
 def packing_after_sterile():
     if login_required():
@@ -969,6 +951,342 @@ def reports():
         selected_date=selected_date,
         is_viewer=is_viewer()
     )
+
+# ============================================
+# PDF EXPORT - REPORTS
+# ============================================
+try:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter, landscape
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.enums import TA_CENTER
+    
+    @app.route('/export_pdf/<report_type>')
+    def export_pdf(report_type):
+        if login_required():
+            return redirect(url_for('login'))
+        
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            alignment=TA_CENTER,
+            spaceAfter=12
+        )
+        
+        title = Paragraph(f"AIWPS360 ERP - {report_type.title()} Report", title_style)
+        elements.append(title)
+        elements.append(Spacer(1, 12))
+        
+        conn = sqlite3.connect('production.db')
+        cursor = conn.cursor()
+        
+        if report_type == 'production':
+            cursor.execute("SELECT assembly_date, assembler_name, quantity, unit FROM assembly_records ORDER BY timestamp DESC LIMIT 50")
+            data = cursor.fetchall()
+            headers = ['Date', 'Assembler', 'Quantity', 'Unit']
+            table_data = [headers] + [[str(row[0]), row[1], str(row[2]), row[3]] for row in data]
+        
+        elif report_type == 'warehouse':
+            cursor.execute("SELECT item_name, quantity, unit FROM warehouse_stock ORDER BY item_name")
+            data = cursor.fetchall()
+            headers = ['Item Name', 'Quantity', 'Unit']
+            table_data = [headers] + [[row[0], str(row[1]), row[2]] for row in data]
+        
+        elif report_type == 'attendance':
+            today = datetime.now().strftime("%Y-%m-%d")
+            cursor.execute("""
+                SELECT a.attendance_date, e.full_name, a.check_in_time, a.status 
+                FROM attendance a JOIN employees e ON a.employee_code = e.employee_code 
+                WHERE a.attendance_date = ? ORDER BY e.full_name
+            """, (today,))
+            data = cursor.fetchall()
+            headers = ['Date', 'Employee', 'Time', 'Status']
+            table_data = [headers] + [[row[0], row[1], row[2], row[3]] for row in data]
+        
+        elif report_type == 'sterilization':
+            cursor.execute("SELECT entry_date, lot_number, bag_quantity, pcs_quantity, person_name FROM sterilization_entry ORDER BY timestamp DESC LIMIT 50")
+            data = cursor.fetchall()
+            headers = ['Date', 'LOT', 'Bags', 'PCS', 'Person']
+            table_data = [headers] + [[row[0], row[1], str(row[2]), str(row[3]), row[4]] for row in data]
+        
+        elif report_type == 'sales':
+            cursor.execute("""
+                SELECT o.order_date, c.customer_name, o.total_amount, o.status 
+                FROM sales_orders o JOIN customers c ON o.customer_code = c.customer_code 
+                ORDER BY o.timestamp DESC LIMIT 50
+            """)
+            data = cursor.fetchall()
+            headers = ['Date', 'Customer', 'Amount', 'Status']
+            table_data = [headers] + [[row[0], row[1], f"${row[2]:.2f}", row[3]] for row in data]
+        
+        else:
+            flash('Invalid report type!', 'error')
+            return redirect(url_for('reports'))
+        
+        conn.close()
+        
+        # Adjust column widths based on report type
+        col_widths = []
+        for i in range(len(headers)):
+            col_widths.append(1.5 * inch)
+        
+        table = Table(table_data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ]))
+        
+        elements.append(table)
+        doc.build(elements)
+        buffer.seek(0)
+        
+        return send_file(buffer, download_name=f"{report_type}_report.pdf", as_attachment=True)
+    
+except ImportError:
+    print("⚠️ ReportLab not installed. PDF export disabled.")
+
+# ============================================
+# EXCEL EXPORT - REPORTS
+# ============================================
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    
+    @app.route('/export_excel/<report_type>')
+    def export_excel(report_type):
+        if login_required():
+            return redirect(url_for('login'))
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = report_type.title()
+        
+        ws['A1'] = f"AIWPS360 ERP - {report_type.title()} Report"
+        ws['A1'].font = Font(size=14, bold=True)
+        ws.merge_cells('A1:E1')
+        
+        conn = sqlite3.connect('production.db')
+        cursor = conn.cursor()
+        
+        if report_type == 'production':
+            cursor.execute("SELECT assembly_date, assembler_name, quantity, unit FROM assembly_records ORDER BY timestamp DESC LIMIT 50")
+            data = cursor.fetchall()
+            headers = ['Date', 'Assembler', 'Quantity', 'Unit']
+        
+        elif report_type == 'warehouse':
+            cursor.execute("SELECT item_name, quantity, unit FROM warehouse_stock ORDER BY item_name")
+            data = cursor.fetchall()
+            headers = ['Item Name', 'Quantity', 'Unit']
+        
+        elif report_type == 'attendance':
+            today = datetime.now().strftime("%Y-%m-%d")
+            cursor.execute("""
+                SELECT a.attendance_date, e.full_name, a.check_in_time, a.status 
+                FROM attendance a JOIN employees e ON a.employee_code = e.employee_code 
+                WHERE a.attendance_date = ? ORDER BY e.full_name
+            """, (today,))
+            data = cursor.fetchall()
+            headers = ['Date', 'Employee', 'Time', 'Status']
+        
+        elif report_type == 'sterilization':
+            cursor.execute("SELECT entry_date, lot_number, bag_quantity, pcs_quantity, person_name FROM sterilization_entry ORDER BY timestamp DESC LIMIT 50")
+            data = cursor.fetchall()
+            headers = ['Date', 'LOT', 'Bags', 'PCS', 'Person']
+        
+        elif report_type == 'sales':
+            cursor.execute("""
+                SELECT o.order_date, c.customer_name, o.total_amount, o.status 
+                FROM sales_orders o JOIN customers c ON o.customer_code = c.customer_code 
+                ORDER BY o.timestamp DESC LIMIT 50
+            """)
+            data = cursor.fetchall()
+            headers = ['Date', 'Customer', 'Amount', 'Status']
+        
+        else:
+            flash('Invalid report type!', 'error')
+            return redirect(url_for('reports'))
+        
+        conn.close()
+        
+        # Add headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=3, column=col, value=header)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center")
+        
+        # Add data
+        for row_idx, row in enumerate(data, 4):
+            for col_idx, value in enumerate(row, 1):
+                ws.cell(row=row_idx, column=col_idx, value=value)
+        
+        # Auto-size columns
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 30)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        
+        return send_file(buffer, download_name=f"{report_type}_report.xlsx", as_attachment=True)
+    
+except ImportError:
+    print("⚠️ OpenPyXL not installed. Excel export disabled.")
+
+# ============================================
+# EMAIL NOTIFICATIONS
+# ============================================
+try:
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    class EmailNotifier:
+        def __init__(self, smtp_server='smtp.gmail.com', smtp_port=587, email='', password=''):
+            self.smtp_server = smtp_server
+            self.smtp_port = smtp_port
+            self.email = email
+            self.password = password
+        
+        def send_email(self, to_email, subject, body):
+            try:
+                msg = MIMEMultipart()
+                msg['From'] = self.email
+                msg['To'] = to_email
+                msg['Subject'] = subject
+                msg.attach(MIMEText(body, 'plain'))
+                
+                server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+                server.starttls()
+                server.login(self.email, self.password)
+                server.send_message(msg)
+                server.quit()
+                return True, "Email sent successfully!"
+            except Exception as e:
+                return False, f"Error: {str(e)}"
+        
+        def send_low_stock_alert(self, to_email, item_name, quantity, threshold):
+            subject = f"⚠️ Low Stock Alert: {item_name}"
+            body = f"""
+        LOW STOCK ALERT
+        
+        Item: {item_name}
+        Current Quantity: {quantity} PCS
+        Threshold: {threshold} PCS
+        
+        Please reorder this item immediately.
+        
+        Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        -- AIWPS360 ERP System
+        """
+            return self.send_email(to_email, subject, body)
+        
+        def send_daily_summary(self, to_email, summary_data):
+            subject = f"Daily Production Summary - {datetime.now().strftime('%Y-%m-%d')}"
+            body = f"""
+        DAILY PRODUCTION SUMMARY
+        
+        Date: {datetime.now().strftime('%Y-%m-%d')}
+        
+        Today's Assembly: {summary_data.get('today_assembly', 0)} PCS
+        Total Stock Items: {summary_data.get('total_stock_items', 0)}
+        Total Employees: {summary_data.get('total_employees', 0)}
+        
+        -- AIWPS360 ERP System
+        """
+            return self.send_email(to_email, subject, body)
+    
+    @app.route('/settings/email', methods=['POST'])
+    def save_email_settings():
+        if login_required():
+            return redirect(url_for('login'))
+        if is_viewer():
+            flash('❌ Viewers cannot change email settings!', 'error')
+            return redirect(url_for('settings'))
+        
+        email = request.form.get('email', '')
+        password = request.form.get('password', '')
+        alert_email = request.form.get('alert_email', '')
+        
+        set_setting('email_address', email)
+        set_setting('email_password', password)
+        set_setting('email_alert_to', alert_email)
+        
+        flash('✅ Email settings saved!', 'success')
+        return redirect(url_for('settings'))
+    
+    @app.route('/check_low_stock')
+    def check_low_stock():
+        if login_required():
+            return redirect(url_for('login'))
+        
+        settings = get_all_settings()
+        email = settings.get('email_address', '')
+        password = settings.get('email_password', '')
+        alert_email = settings.get('email_alert_to', '')
+        
+        if not email or not alert_email:
+            flash('❌ Please configure email settings first!', 'error')
+            return redirect(url_for('settings'))
+        
+        conn = sqlite3.connect('production.db')
+        cursor = conn.cursor()
+        
+        thresholds = get_thresholds()
+        cursor.execute("SELECT item_name, quantity FROM warehouse_stock")
+        stock = cursor.fetchall()
+        conn.close()
+        
+        notifier = EmailNotifier(email=email, password=password)
+        alerts_sent = 0
+        alert_items = []
+        
+        for item_name, quantity in stock:
+            threshold = thresholds.get(item_name, 10)
+            if quantity <= threshold:
+                alert_items.append(f"{item_name}: {quantity} PCS (Threshold: {threshold})")
+                success, message = notifier.send_low_stock_alert(
+                    alert_email, 
+                    item_name, 
+                    quantity, 
+                    threshold
+                )
+                if success:
+                    alerts_sent += 1
+        
+        if alert_items:
+            flash(f'✅ {alerts_sent} low stock alerts sent!\n\nItems: {", ".join(alert_items)}', 'success')
+        else:
+            flash('✅ No low stock items found. All stocks are above threshold.', 'success')
+        
+        return redirect(url_for('reports'))
+    
+except ImportError:
+    print("⚠️ Email module not fully configured.")
 
 # ============================================
 # SETTINGS ROUTES

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOUR COMPANY — ERP System</title>
+    <title>AIWPS360 ERP — IV Set Manager</title>
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -18,6 +18,7 @@
         body {
             font-size: {{ app_settings.font_size }}px;
             font-family: '{{ app_settings.font_family }}', 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         :root {
@@ -29,7 +30,7 @@
         }
 
         /* ============================================ */
-        /* CUSTOM BRAND COLORS - CHANGE THESE            */
+        /* CUSTOM BRAND COLORS                          */
         /* ============================================ */
         :root {
             --brand-primary: #1a56db;
@@ -67,29 +68,11 @@
             gap: 12px;
         }
 
-        .main-sidebar-logo {
-            flex-shrink: 0;
-        }
-
         .main-sidebar-logo img {
-            width: 45px;
-            height: 45px;
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
             object-fit: cover;
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-
-        .main-sidebar-logo .logo-placeholder {
-            width: 45px;
-            height: 45px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 22px;
-            font-weight: 700;
         }
 
         .main-sidebar-title {
@@ -165,24 +148,6 @@
             margin-bottom: 8px;
         }
 
-        .main-sidebar-user-type .badge-admin {
-            background: var(--brand-primary);
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .main-sidebar-user-type .badge-viewer {
-            background: #6b7280;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
         .main-sidebar-logout {
             color: var(--sidebar-text);
             text-decoration: none;
@@ -209,16 +174,13 @@
             margin-top: 60px;
         }
 
-        .main-sidebar-footer strong {
-            color: #64748b;
-        }
-
         .main-content {
             margin-left: var(--sidebar-width);
             padding: 24px 32px;
             flex: 1;
             min-height: 100vh;
             background: #f1f5f9;
+            transition: background-color 0.3s ease;
         }
 
         .sidebar-toggle {
@@ -232,7 +194,7 @@
         }
 
         /* ============================================ */
-        /* DEPARTMENT LAYOUT - SIDEBAR STYLE (DEFAULT)  */
+        /* DEPARTMENT LAYOUT                            */
         /* ============================================ */
         .dept-layout {
             display: flex;
@@ -249,6 +211,7 @@
             padding: 12px;
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: background-color 0.3s ease;
         }
 
         .dept-sidebar button {
@@ -295,7 +258,7 @@
         }
 
         /* ============================================ */
-        /* DEPARTMENT LAYOUT - TOPBAR STYLE            */
+        /* TOPBAR STYLE                               */
         /* ============================================ */
         .dept-layout-topbar {
             display: flex;
@@ -314,6 +277,7 @@
             border-radius: 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             overflow-x: auto;
+            transition: background-color 0.3s ease;
         }
 
         .dept-sidebar-topbar button {
@@ -347,6 +311,158 @@
         .dept-content-topbar {
             flex: 1;
             min-width: 0;
+        }
+
+        /* ============================================ */
+        /* DARK MODE STYLES                            */
+        /* ============================================ */
+        body.dark-mode .main-content {
+            background: #0f172a;
+        }
+
+        body.dark-mode .dept-sidebar {
+            background: #1e293b;
+            border-color: #2d3748;
+        }
+
+        body.dark-mode .dept-sidebar button {
+            color: #94a3b8;
+        }
+
+        body.dark-mode .dept-sidebar button:hover {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .dept-sidebar-topbar {
+            background: #1e293b;
+            border-color: #2d3748;
+        }
+
+        body.dark-mode .dept-sidebar-topbar button {
+            color: #94a3b8;
+        }
+
+        body.dark-mode .dept-sidebar-topbar button:hover {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .card-modern {
+            background: #1e293b;
+            border-color: #2d3748;
+        }
+
+        body.dark-mode .card-header-modern {
+            border-bottom-color: #2d3748;
+        }
+
+        body.dark-mode .card-header-modern h5 {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .card-body-modern {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .table-modern thead th {
+            background: #2d3748;
+            color: #94a3b8;
+        }
+
+        body.dark-mode .table-modern tbody td {
+            color: #e2e8f0;
+            border-bottom-color: #2d3748;
+        }
+
+        body.dark-mode .table-modern tbody tr:hover {
+            background: #2d3748;
+        }
+
+        body.dark-mode .stat-card {
+            background: #1e293b;
+        }
+
+        body.dark-mode .stat-info h3 {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .stat-info p {
+            color: #94a3b8;
+        }
+
+        body.dark-mode .alert-info {
+            background: #1e3a5f;
+            color: #93c5fd;
+            border-color: #2563eb;
+        }
+
+        body.dark-mode .alert-warning {
+            background: #4b3d1a;
+            color: #fcd34d;
+            border-color: #b45309;
+        }
+
+        body.dark-mode .alert-danger {
+            background: #4b1a1a;
+            color: #fca5a5;
+            border-color: #b91c1c;
+        }
+
+        body.dark-mode .alert-success {
+            background: #1a4b1a;
+            color: #86efac;
+            border-color: #15803d;
+        }
+
+        body.dark-mode .form-control {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-color: #2d3748;
+        }
+
+        body.dark-mode .form-control:focus {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .form-select {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-color: #2d3748;
+        }
+
+        body.dark-mode .form-select option {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .quick-stat-item {
+            background: #2d3748;
+        }
+
+        body.dark-mode .quick-stat-item:hover {
+            background: #374151;
+        }
+
+        body.dark-mode .quick-stat-label {
+            color: #94a3b8;
+        }
+
+        body.dark-mode .quick-stat-value {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .badge {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .text-muted {
+            color: #94a3b8 !important;
+        }
+
+        body.dark-mode .alert {
+            border-color: #2d3748;
         }
 
         /* ============================================ */
@@ -431,35 +547,21 @@
     <div class="main-sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="app-layout">
-        <!-- ============================================ -->
-        <!-- SIDEBAR                                      -->
-        <!-- ============================================ -->
+        <!-- Sidebar -->
         <div class="main-sidebar" id="mainSidebar">
-            <!-- ============================================ -->
-            <!-- LOGO & COMPANY NAME - CUSTOMIZE HERE         -->
-            <!-- ============================================ -->
             <div class="main-sidebar-header">
                 <div class="main-sidebar-logo">
-                    <!-- OPTION 1: Use Image Logo -->
                     <img src="{{ url_for('static', filename='images/logo.png') }}" 
                          alt="Logo" 
-                         onerror="this.style.display='none'; document.getElementById('logo-placeholder').style.display='flex';">
-                    <!-- OPTION 2: Text Logo (Shows if image fails) -->
-                    <div id="logo-placeholder" class="logo-placeholder" style="display:none;">
-                        <span>Y</span>
-                    </div>
+                         style="width:40px; height:40px; border-radius:8px; object-fit:cover;"
+                         onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏢</text></svg>'">
                 </div>
                 <div>
-                    <!-- CHANGE COMPANY NAME HERE -->
-                    <div class="main-sidebar-title">YOUR COMPANY</div>
-                    <!-- CHANGE SUBTITLE HERE -->
-                    <div class="main-sidebar-sub">ERP System</div>
+                    <div class="main-sidebar-title">AIWPS360 ERP</div>
+                    <div class="main-sidebar-sub">by ZUBAIR</div>
                 </div>
             </div>
 
-            <!-- ============================================ -->
-            <!-- NAVIGATION MENU                             -->
-            <!-- ============================================ -->
             <nav class="main-sidebar-nav">
                 <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">
                     <i class="fas fa-chart-pie"></i> <span>{{ tr('nav_dashboard') }}</span>
@@ -484,17 +586,14 @@
                 </a>
             </nav>
 
-            <!-- ============================================ -->
-            <!-- USER & LANGUAGE SECTION                     -->
-            <!-- ============================================ -->
             <div class="main-sidebar-user">
                 <div class="main-sidebar-username">{{ session['user']['full_name'] }}</div>
                 <div class="main-sidebar-user-type">
                     <i class="fas fa-user-shield me-1"></i>
                     {% if session['user']['user_type'] == 'Admin' %}
-                        <span class="badge-admin">🛠️ Admin</span>
+                        🛠️ Admin
                     {% else %}
-                        <span class="badge-viewer">👁️ Viewer</span>
+                        👁️ Viewer
                     {% endif %}
                 </div>
                 <form method="post" action="/set_language" style="margin-bottom:6px;">
@@ -507,28 +606,26 @@
                 </a>
             </div>
 
-            <!-- ============================================ -->
-            <!-- FOOTER - CUSTOMIZE HERE                      -->
-            <!-- ============================================ -->
             <div class="main-sidebar-footer">
-                <strong>YOUR COMPANY</strong><br>
-                📱 +1234567890<br>
-                ✉️ your-email@company.com
+                Dev: ZUBAIR<br>
+                📱 +996990115990<br>
+                ✉️ skzubair151@gmail.com
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- MAIN CONTENT                                -->
-        <!-- ============================================ -->
+        <!-- Main Content -->
         <div class="main-content">
-            <!-- Top Bar -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <button class="sidebar-toggle" onclick="toggleSidebar()">
                         <i class="fas fa-bars"></i>
                     </button>
                 </div>
-                <div>
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="btn btn-sm btn-outline-secondary" id="darkModeToggle" title="Toggle Dark Mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
                     <span class="text-muted" style="font-size:14px;">
                         <i class="far fa-calendar-alt me-2"></i>
                         {{ datetime.now().strftime('%A, %B %d, %Y') }}
@@ -549,7 +646,6 @@
                 {% endif %}
             {% endwith %}
 
-            <!-- Page Content -->
             {% block content %}{% endblock %}
         </div>
     </div>
@@ -575,15 +671,29 @@
         }
     });
 
-    // Logo fallback
+    // ============================================ //
+    // DARK MODE                                    //
+    // ============================================ //
+    function toggleDarkMode() {
+        const body = document.body;
+        const toggle = document.getElementById('darkModeToggle');
+        body.classList.toggle('dark-mode');
+
+        if (body.classList.contains('dark-mode')) {
+            toggle.innerHTML = '<i class="fas fa-sun"></i>';
+            localStorage.setItem('darkMode', 'enabled');
+        } else {
+            toggle.innerHTML = '<i class="fas fa-moon"></i>';
+            localStorage.setItem('darkMode', 'disabled');
+        }
+    }
+
+    // Load dark mode preference on page load
     document.addEventListener('DOMContentLoaded', function() {
-        const logoImg = document.querySelector('.main-sidebar-logo img');
-        if (logoImg) {
-            logoImg.onerror = function() {
-                this.style.display = 'none';
-                const placeholder = document.getElementById('logo-placeholder');
-                if (placeholder) placeholder.style.display = 'flex';
-            };
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+            const toggle = document.getElementById('darkModeToggle');
+            if (toggle) toggle.innerHTML = '<i class="fas fa-sun"></i>';
         }
     });
     </script>

@@ -6,6 +6,7 @@
         <div class="dept-sidebar-topbar" id="set-sidebar">
             <button data-target="s-appearance" class="active"><i class="fas fa-palette"></i> {{ tr('set_appearance') }}</button>
             <button data-target="s-backup"><i class="fas fa-database"></i> {{ tr('set_backup') }}</button>
+            <button data-target="s-email"><i class="fas fa-envelope"></i> Email</button>
         </div>
         <div class="dept-content-topbar">
 {% else %}
@@ -13,6 +14,7 @@
         <div class="dept-sidebar" id="set-sidebar">
             <button data-target="s-appearance" class="active"><i class="fas fa-palette"></i> {{ tr('set_appearance') }}</button>
             <button data-target="s-backup"><i class="fas fa-database"></i> {{ tr('set_backup') }}</button>
+            <button data-target="s-email"><i class="fas fa-envelope"></i> Email</button>
         </div>
         <div class="dept-content">
 {% endif %}
@@ -184,6 +186,40 @@
                                 </form>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Panel -->
+            <div class="dept-panel" id="s-email">
+                <div class="card card-modern">
+                    <div class="card-header-modern">
+                        <h5><i class="fas fa-envelope text-info me-2"></i> Email Notifications</h5>
+                    </div>
+                    <div class="card-body-modern">
+                        <form method="post" action="/settings/email">
+                            <div class="mb-3">
+                                <label class="form-label">Email Address (Gmail)</label>
+                                <input type="email" name="email" class="form-control" value="{{ app_settings.email_address }}" placeholder="your-email@gmail.com">
+                                <small class="text-muted">Use your Gmail address</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">App Password</label>
+                                <input type="password" name="password" class="form-control" placeholder="Enter Gmail App Password">
+                                <small class="text-muted">Generate from Google Account → Security → App Passwords</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Send Alerts To</label>
+                                <input type="email" name="alert_email" class="form-control" value="{{ app_settings.email_alert_to }}" placeholder="alert-recipient@example.com">
+                            </div>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-save me-1"></i> Save Email Settings
+                            </button>
+                        </form>
+                        <hr>
+                        <a href="/check_low_stock" class="btn btn-warning">
+                            <i class="fas fa-bell me-1"></i> Check Low Stock & Send Alerts
+                        </a>
                     </div>
                 </div>
             </div>
