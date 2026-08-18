@@ -118,12 +118,9 @@
                                     {% for entry in data.entries %}
                                     <tr>
                                         <td style="padding-left:30px;">
-                                            <span class="text-muted">📄 {{ entry.invoice }}</span>
-                                            {% if entry.price > 0 %}
-                                                <span class="text-muted ms-2">({{ currency_symbol }}{{ "%.2f"|format(entry.price) }}/unit)</span>
-                                            {% endif %}
+                                            <span class="text-muted">📄 {{ entry[0] }}</span>
                                         </td>
-                                        <td class="text-end">{{ entry.qty }}</td>
+                                        <td class="text-end">{{ entry[1] }}</td>
                                     </tr>
                                     {% endfor %}
                                 {% else %}
@@ -168,10 +165,6 @@
                                 <td><span class="badge bg-primary">{{ r[1] }}</span></td>
                                 <td>{{ r[2] }}</td>
                                 <td class="text-end">{{ r[3] }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">No recent activity</td>
                             </tr>
                             {% endfor %}
                         </tbody>
