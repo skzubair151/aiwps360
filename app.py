@@ -257,7 +257,8 @@ def home():
         total_packing=total_packing,
         total_sealing=total_sealing,
         total_sterilized=total_sterilized,
-        is_viewer=is_viewer()
+        is_viewer=is_viewer(),
+        all_products=all_products
     )
 
 # ============================================
@@ -288,10 +289,23 @@ def add_product():
     if is_viewer():
         flash('❌ Viewers cannot add products!', 'error')
         return redirect(url_for('warehouse'))
+    
     product_name = request.form.get('product_name', '')
     unit = request.form.get('unit', 'PCS')
     low_stock_qty = int(request.form.get('low_stock_qty', 10))
-    manager.add_product(product_name, unit)
+    
+    image_path = ''
+    if 'product_image' in request.files:
+        file = request.files['product_image']
+        if file and file.filename != '':
+            product_images_dir = os.path.join('static', 'product_images')
+            os.makedirs(product_images_dir, exist_ok=True)
+            filename = secure_filename(f"{product_name}_{file.filename}")
+            file_path = os.path.join(product_images_dir, filename)
+            file.save(file_path)
+            image_path = f"product_images/{filename}"
+    
+    manager.add_product(product_name, unit, image_path)
     set_threshold(product_name, low_stock_qty)
     flash(f'✅ Product "{product_name}" added successfully!', 'success')
     return redirect(url_for('warehouse'))
@@ -305,6 +319,34 @@ def delete_product(product_name):
         return redirect(url_for('warehouse'))
     success, message = manager.delete_product(product_name)
     flash(message, 'success' if success else 'error')
+    return redirect(url_for('warehouse'))
+
+@app.route('/warehouse/upload_product_image/<product_name>', methods=['POST'])
+def upload_product_image(product_name):
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot upload images!', 'error')
+        return redirect(url_for('warehouse'))
+    
+    if 'product_image' not in request.files:
+        flash('❌ No file selected!', 'error')
+        return redirect(url_for('warehouse'))
+    
+    file = request.files['product_image']
+    if file.filename == '':
+        flash('❌ No file selected!', 'error')
+        return redirect(url_for('warehouse'))
+    
+    if file:
+        product_images_dir = os.path.join('static', 'product_images')
+        os.makedirs(product_images_dir, exist_ok=True)
+        filename = secure_filename(f"{product_name}_{file.filename}")
+        file_path = os.path.join(product_images_dir, filename)
+        file.save(file_path)
+        manager.update_product_image(product_name, f"product_images/{filename}")
+        flash(f'✅ Image uploaded for {product_name}!', 'success')
+    
     return redirect(url_for('warehouse'))
 
 @app.route('/warehouse/add_supplier', methods=['POST'])
