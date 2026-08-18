@@ -1,11 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from business import ProductionManager
 from auth_manager import AuthManager
 from translations import get_tr
 from datetime import datetime
 import sqlite3
 import os
-import io
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -963,205 +962,104 @@ def reports():
     )
 
 # ============================================
-# PDF EXPORT
+# SETTINGS ROUTES
 # ============================================
-try:
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import letter, landscape
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import inch
-    from reportlab.lib.enums import TA_CENTER
-    
-    @app.route('/export_pdf/<report_type>')
-    def export_pdf(report_type):
-        if login_required():
-            return redirect(url_for('login'))
-        
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
-        elements = []
-        styles = getSampleStyleSheet()
-        
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=16,
-            alignment=TA_CENTER,
-            spaceAfter=12
-        )
-        
-        title = Paragraph(f"AIWPS360 ERP - {report_type.title()} Report", title_style)
-        elements.append(title)
-        elements.append(Spacer(1, 12))
-        
-        conn = sqlite3.connect('production.db')
-        cursor = conn.cursor()
-        
-        if report_type == 'production':
-            cursor.execute("SELECT assembly_date, assembler_name, quantity, unit FROM assembly_records ORDER BY timestamp DESC LIMIT 50")
-            data = cursor.fetchall()
-            headers = ['Date', 'Assembler', 'Quantity', 'Unit']
-            table_data = [headers] + [[str(row[0]), row[1], str(row[2]), row[3]] for row in data]
-        
-        elif report_type == 'warehouse':
-            cursor.execute("SELECT item_name, quantity, unit FROM warehouse_stock ORDER BY item_name")
-            data = cursor.fetchall()
-            headers = ['Item Name', 'Quantity', 'Unit']
-            table_data = [headers] + [[row[0], str(row[1]), row[2]] for row in data]
-        
-        elif report_type == 'attendance':
-            today = datetime.now().strftime("%Y-%m-%d")
-            cursor.execute("""
-                SELECT a.attendance_date, e.full_name, a.check_in_time, a.status 
-                FROM attendance a JOIN employees e ON a.employee_code = e.employee_code 
-                WHERE a.attendance_date = ? ORDER BY e.full_name
-            """, (today,))
-            data = cursor.fetchall()
-            headers = ['Date', 'Employee', 'Time', 'Status']
-            table_data = [headers] + [[row[0], row[1], row[2], row[3]] for row in data]
-        
-        elif report_type == 'sterilization':
-            cursor.execute("SELECT entry_date, lot_number, bag_quantity, pcs_quantity, person_name FROM sterilization_entry ORDER BY timestamp DESC LIMIT 50")
-            data = cursor.fetchall()
-            headers = ['Date', 'LOT', 'Bags', 'PCS', 'Person']
-            table_data = [headers] + [[row[0], row[1], str(row[2]), str(row[3]), row[4]] for row in data]
-        
-        elif report_type == 'sales':
-            cursor.execute("""
-                SELECT o.order_date, c.customer_name, o.total_amount, o.status 
-                FROM sales_orders o JOIN customers c ON o.customer_code = c.customer_code 
-                ORDER BY o.timestamp DESC LIMIT 50
-            """)
-            data = cursor.fetchall()
-            headers = ['Date', 'Customer', 'Amount', 'Status']
-            table_data = [headers] + [[row[0], row[1], f"${row[2]:.2f}", row[3]] for row in data]
-        
-        else:
-            flash('Invalid report type!', 'error')
-            return redirect(url_for('reports'))
-        
-        conn.close()
-        
-        col_widths = []
-        for i in range(len(headers)):
-            col_widths.append(1.5 * inch)
-        
-        table = Table(table_data, colWidths=col_widths)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ]))
-        
-        elements.append(table)
-        doc.build(elements)
-        buffer.seek(0)
-        
-        return send_file(buffer, download_name=f"{report_type}_report.pdf", as_attachment=True)
-    
-except ImportError:
-    print("⚠️ ReportLab not installed.")
+@app.route('/settings')
+def settings():
+    if login_required():
+        return redirect(url_for('login'))
+    return render_template('settings.html', active='settings', is_viewer=is_viewer())
 
-# ============================================
-# EXCEL EXPORT
-# ============================================
-try:
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
-    
-    @app.route('/export_excel/<report_type>')
-    def export_excel(report_type):
-        if login_required():
-            return redirect(url_for('login'))
-        
-        wb = Workbook()
-        ws = wb.active
-        ws.title = report_type.title()
-        
-        ws['A1'] = f"AIWPS360 ERP - {report_type.title()} Report"
-        ws['A1'].font = Font(size=14, bold=True)
-        ws.merge_cells('A1:E1')
-        
-        conn = sqlite3.connect('production.db')
-        cursor = conn.cursor()
-        
-        if report_type == 'production':
-            cursor.execute("SELECT assembly_date, assembler_name, quantity, unit FROM assembly_records ORDER BY timestamp DESC LIMIT 50")
-            data = cursor.fetchall()
-            headers = ['Date', 'Assembler', 'Quantity', 'Unit']
-        
-        elif report_type == 'warehouse':
-            cursor.execute("SELECT item_name, quantity, unit FROM warehouse_stock ORDER BY item_name")
-            data = cursor.fetchall()
-            headers = ['Item Name', 'Quantity', 'Unit']
-        
-        elif report_type == 'attendance':
-            today = datetime.now().strftime("%Y-%m-%d")
-            cursor.execute("""
-                SELECT a.attendance_date, e.full_name, a.check_in_time, a.status 
-                FROM attendance a JOIN employees e ON a.employee_code = e.employee_code 
-                WHERE a.attendance_date = ? ORDER BY e.full_name
-            """, (today,))
-            data = cursor.fetchall()
-            headers = ['Date', 'Employee', 'Time', 'Status']
-        
-        elif report_type == 'sterilization':
-            cursor.execute("SELECT entry_date, lot_number, bag_quantity, pcs_quantity, person_name FROM sterilization_entry ORDER BY timestamp DESC LIMIT 50")
-            data = cursor.fetchall()
-            headers = ['Date', 'LOT', 'Bags', 'PCS', 'Person']
-        
-        elif report_type == 'sales':
-            cursor.execute("""
-                SELECT o.order_date, c.customer_name, o.total_amount, o.status 
-                FROM sales_orders o JOIN customers c ON o.customer_code = c.customer_code 
-                ORDER BY o.timestamp DESC LIMIT 50
-            """)
-            data = cursor.fetchall()
-            headers = ['Date', 'Customer', 'Amount', 'Status']
-        
-        else:
-            flash('Invalid report type!', 'error')
-            return redirect(url_for('reports'))
-        
-        conn.close()
-        
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=3, column=col, value=header)
-            cell.font = Font(bold=True, color="FFFFFF")
-            cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-            cell.alignment = Alignment(horizontal="center")
-        
-        for row_idx, row in enumerate(data, 4):
-            for col_idx, value in enumerate(row, 1):
-                ws.cell(row=row_idx, column=col_idx, value=value)
-        
-        for col in ws.columns:
-            max_length = 0
-            column = col[0].column_letter
-            for cell in col:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = min(max_length + 2, 30)
-            ws.column_dimensions[column].width = adjusted_width
-        
-        buffer = io.BytesIO()
-        wb.save(buffer)
-        buffer.seek(0)
-        
-        return send_file(buffer, download_name=f"{report_type}_report.xlsx", as_attachment=True)
-    
-except ImportError:
-    print("⚠️ OpenPyXL not installed.")
+@app.route('/settings/apply', methods=['POST'])
+def settings_apply():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot change settings!', 'error')
+        return redirect(url_for('settings'))
+    set_setting('font_size', request.form.get('font_size', '14'))
+    set_setting('font_family', request.form.get('font_family', 'Segoe UI'))
+    set_setting('default_language', request.form.get('default_language', 'EN'))
+    set_setting('background_opacity', request.form.get('background_opacity', '100'))
+    set_setting('fit_to_window', 'on' if request.form.get('fit_to_window') else 'off')
+    set_setting('tab_view', request.form.get('tab_view', 'sidebar'))
+    set_setting('theme', request.form.get('theme', 'industrial'))
+    set_setting('currency', request.form.get('currency', 'USD'))
+    bg_file = request.files.get('background_image')
+    if bg_file and bg_file.filename:
+        filename = secure_filename(bg_file.filename)
+        bg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        set_setting('background_image', filename)
+    flash('✅ Settings applied!', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/remove_background', methods=['POST'])
+def settings_remove_background():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot remove background!', 'error')
+        return redirect(url_for('settings'))
+    set_setting('background_image', '')
+    flash('✅ Background image removed!', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/set_backup_folder', methods=['POST'])
+def settings_set_backup_folder():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot change backup folder!', 'error')
+        return redirect(url_for('settings'))
+    set_setting('backup_folder', request.form.get('backup_folder', 'static/uploads'))
+    flash('✅ Backup folder saved!', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/reset_appearance', methods=['POST'])
+def settings_reset_appearance():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot reset appearance!', 'error')
+        return redirect(url_for('settings'))
+    for key, value in DEFAULT_SETTINGS.items():
+        set_setting(key, value)
+    flash('✅ Appearance reset to default!', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/backup', methods=['POST'])
+def settings_backup():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot create backups!', 'error')
+        return redirect(url_for('settings'))
+    import shutil
+    settings_now = get_all_settings()
+    backup_folder = settings_now.get('backup_folder', 'static/uploads')
+    os.makedirs(backup_folder, exist_ok=True)
+    backup_name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+    backup_path = os.path.join(backup_folder, backup_name)
+    shutil.copy2('production.db', backup_path)
+    flash(f'✅ Backup created: {backup_path}', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/restore', methods=['POST'])
+def settings_restore():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot restore database!', 'error')
+        return redirect(url_for('settings'))
+    restore_file = request.files.get('restore_file')
+    if not restore_file or not restore_file.filename.endswith('.db'):
+        flash('❌ Please choose a valid .db backup file!', 'error')
+        return redirect(url_for('settings'))
+    import shutil
+    shutil.copy2('production.db', 'production_before_restore.db')
+    restore_file.save('production.db')
+    flash('✅ Database restored! Please restart the app.', 'success')
+    return redirect(url_for('settings'))
 
 # ============================================
 # EMAIL NOTIFICATIONS
@@ -1293,106 +1191,6 @@ try:
     
 except ImportError:
     print("⚠️ Email module not fully configured.")
-
-# ============================================
-# SETTINGS ROUTES
-# ============================================
-@app.route('/settings')
-def settings():
-    if login_required():
-        return redirect(url_for('login'))
-    return render_template('settings.html', active='settings', is_viewer=is_viewer())
-
-@app.route('/settings/apply', methods=['POST'])
-def settings_apply():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot change settings!', 'error')
-        return redirect(url_for('settings'))
-    set_setting('font_size', request.form.get('font_size', '14'))
-    set_setting('font_family', request.form.get('font_family', 'Segoe UI'))
-    set_setting('default_language', request.form.get('default_language', 'EN'))
-    set_setting('background_opacity', request.form.get('background_opacity', '100'))
-    set_setting('fit_to_window', 'on' if request.form.get('fit_to_window') else 'off')
-    set_setting('tab_view', request.form.get('tab_view', 'sidebar'))
-    set_setting('theme', request.form.get('theme', 'industrial'))
-    set_setting('currency', request.form.get('currency', 'USD'))
-    bg_file = request.files.get('background_image')
-    if bg_file and bg_file.filename:
-        filename = secure_filename(bg_file.filename)
-        bg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        set_setting('background_image', filename)
-    flash('✅ Settings applied!', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/remove_background', methods=['POST'])
-def settings_remove_background():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot remove background!', 'error')
-        return redirect(url_for('settings'))
-    set_setting('background_image', '')
-    flash('✅ Background image removed!', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/set_backup_folder', methods=['POST'])
-def settings_set_backup_folder():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot change backup folder!', 'error')
-        return redirect(url_for('settings'))
-    set_setting('backup_folder', request.form.get('backup_folder', 'static/uploads'))
-    flash('✅ Backup folder saved!', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/reset_appearance', methods=['POST'])
-def settings_reset_appearance():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot reset appearance!', 'error')
-        return redirect(url_for('settings'))
-    for key, value in DEFAULT_SETTINGS.items():
-        set_setting(key, value)
-    flash('✅ Appearance reset to default!', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/backup', methods=['POST'])
-def settings_backup():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot create backups!', 'error')
-        return redirect(url_for('settings'))
-    import shutil
-    settings_now = get_all_settings()
-    backup_folder = settings_now.get('backup_folder', 'static/uploads')
-    os.makedirs(backup_folder, exist_ok=True)
-    backup_name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
-    backup_path = os.path.join(backup_folder, backup_name)
-    shutil.copy2('production.db', backup_path)
-    flash(f'✅ Backup created: {backup_path}', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/restore', methods=['POST'])
-def settings_restore():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot restore database!', 'error')
-        return redirect(url_for('settings'))
-    restore_file = request.files.get('restore_file')
-    if not restore_file or not restore_file.filename.endswith('.db'):
-        flash('❌ Please choose a valid .db backup file!', 'error')
-        return redirect(url_for('settings'))
-    import shutil
-    shutil.copy2('production.db', 'production_before_restore.db')
-    restore_file.save('production.db')
-    flash('✅ Database restored! Please restart the app.', 'success')
-    return redirect(url_for('settings'))
 
 # ============================================
 # MAIN
