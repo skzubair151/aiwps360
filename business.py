@@ -1,4 +1,4 @@
-# PART 2: BUSINESS LOGIC LAYER (COMPLETE - WITH ASSEMBLY FIXED)
+# PART 2: BUSINESS LOGIC LAYER (COMPLETE - WITH PRICE)
 from database import Database
 from datetime import datetime, timedelta
 import sqlite3
@@ -51,9 +51,9 @@ class ProductionManager:
         return False, "❌ Failed to delete supplier"
     
     # ============================================
-    # WAREHOUSE - RAW MATERIAL ENTRY
+    # WAREHOUSE - RAW MATERIAL ENTRY (WITH PRICE)
     # ============================================
-    def add_raw_material_entry(self, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, received_by):
+    def add_raw_material_entry(self, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, received_by):
         if not supplier_name or supplier_name.strip() == '':
             return False, "Supplier name cannot be empty"
         if not invoice_number or invoice_number.strip() == '':
@@ -62,6 +62,8 @@ class ProductionManager:
             return False, "Item name cannot be empty"
         if quantity <= 0:
             return False, "Quantity must be greater than 0"
+        if price < 0:
+            return False, "Price cannot be negative"
         if not received_by or received_by.strip() == '':
             return False, "Received by name cannot be empty"
         
@@ -69,8 +71,9 @@ class ProductionManager:
         item_name = item_name.strip().title()
         received_by = received_by.strip().title()
         
-        self.db.add_raw_material_entry(supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, received_by)
-        return True, f"✅ {quantity} {unit} of {item_name} received from {supplier_name}"
+        self.db.add_raw_material_entry(supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, received_by)
+        total_price = quantity * price
+        return True, f"✅ {quantity} {unit} of {item_name} received from {supplier_name} at {price}/unit (Total: {total_price})"
     
     def get_raw_material_entries(self):
         return self.db.get_raw_material_entries()

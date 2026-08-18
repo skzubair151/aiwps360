@@ -1,4 +1,4 @@
-# PART 1: DATABASE LAYER (COMPLETE - WITH NEEDLE FIX)
+# PART 1: DATABASE LAYER (COMPLETE - WITH PRICE FIELD)
 import sqlite3
 from datetime import datetime
 import hashlib
@@ -49,6 +49,8 @@ class Database:
                 item_name TEXT NOT NULL,
                 quantity INTEGER NOT NULL,
                 unit TEXT NOT NULL,
+                price REAL DEFAULT 0,
+                total_price REAL DEFAULT 0,
                 received_by TEXT NOT NULL,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -357,6 +359,16 @@ class Database:
             cursor.execute("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'Admin'")
             conn.commit()
         
+        # Add price columns if not exists
+        cursor.execute("PRAGMA table_info(raw_material_entry)")
+        columns = [col[1] for col in cursor.fetchall()]
+        if 'price' not in columns:
+            cursor.execute("ALTER TABLE raw_material_entry ADD COLUMN price REAL DEFAULT 0")
+            conn.commit()
+        if 'total_price' not in columns:
+            cursor.execute("ALTER TABLE raw_material_entry ADD COLUMN total_price REAL DEFAULT 0")
+            conn.commit()
+        
         conn.commit()
         conn.close()
     
@@ -364,13 +376,6 @@ class Database:
         """Insert default data if tables are empty"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        
-        # ============================================
-        # FORCE RESET NEEDLE STOCK
-        # ============================================
-        cursor.execute("DELETE FROM warehouse_stock WHERE item_name LIKE '%Needle%'")
-        cursor.execute("INSERT OR IGNORE INTO warehouse_stock (item_name, quantity, unit) VALUES ('Needle 35mm', 1000, 'PCS')")
-        cursor.execute("INSERT OR IGNORE INTO warehouse_stock (item_name, quantity, unit) VALUES ('Needle 39mm', 1000, 'PCS')")
         
         # Default products
         cursor.execute("SELECT COUNT(*) FROM products")
@@ -575,14 +580,15 @@ class Database:
         return True
     
     # ============================================
-    # RAW MATERIAL
+    # RAW MATERIAL (WITH PRICE)
     # ============================================
-    def add_raw_material_entry(self, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, received_by):
+    def add_raw_material_entry(self, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, received_by):
+        total_price = quantity * price
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO raw_material_entry (supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, received_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, received_by)
+            "INSERT INTO raw_material_entry (supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by)
         )
         cursor.execute('''
             INSERT INTO warehouse_stock (item_name, quantity, unit) 
@@ -597,7 +603,7 @@ class Database:
     def get_raw_material_entries(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, received_by FROM raw_material_entry ORDER BY timestamp DESC")
+        cursor.execute("SELECT id, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by FROM raw_material_entry ORDER BY timestamp DESC")
         results = cursor.fetchall()
         conn.close()
         return results
@@ -614,21 +620,18 @@ class Database:
         return results
     
     def get_item_quantity(self, item_name):
-        """Get quantity of a specific item (case-insensitive)"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        # Case-insensitive search
-        cursor.execute("SELECT quantity, unit FROM warehouse_stock WHERE LOWER(item_name) = LOWER(?)", (item_name,))
+        cursor.execute("SELECT quantity, unit FROM warehouse_stock WHERE item_name = ?", (item_name,))
         result = cursor.fetchone()
         conn.close()
         return result if result else (0, 'PCS')
     
     def deduct_warehouse_stock(self, item_name, quantity):
-        """Deduct stock from warehouse (case-insensitive)"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE LOWER(item_name) = LOWER(?)",
+            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE item_name = ?",
             (quantity, item_name)
         )
         conn.commit()
@@ -645,7 +648,7 @@ class Database:
             (item_name, quantity, unit, received_by, issued_by, transfer_date, remark)
         )
         cursor.execute(
-            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE LOWER(item_name) = LOWER(?)",
+            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE item_name = ?",
             (quantity, item_name)
         )
         conn.commit()
@@ -704,6 +707,15 @@ class Database:
         conn.close()
         return results
     
+    def get_today_assembly(self):
+        today = datetime.now().strftime("%Y-%m-%d")
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT SUM(quantity) FROM assembly_records WHERE assembly_date = ?", (today,))
+        result = cursor.fetchone()[0]
+        conn.close()
+        return result if result else 0
+    
     # ============================================
     # PRODUCTION - PACKING BEFORE SEAL
     # ============================================
@@ -725,6 +737,22 @@ class Database:
         results = cursor.fetchall()
         conn.close()
         return results
+    
+    def get_all_lot_numbers(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT lot_number FROM packing_before_seal ORDER BY lot_number")
+        results = cursor.fetchall()
+        conn.close()
+        return [r[0] for r in results]
+    
+    def get_lot_info(self, lot_number):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT pack_date, packer_name, quantity, unit FROM packing_before_seal WHERE lot_number = ?", (lot_number,))
+        result = cursor.fetchone()
+        conn.close()
+        return result
     
     # ============================================
     # PRODUCTION - SEALING

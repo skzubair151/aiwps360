@@ -1396,3 +1396,61 @@ def settings_restore():
 # ============================================
 if __name__ == '__main__':
     app.run(debug=True)
+
+    DEFAULT_SETTINGS = {
+    'font_size': '14',
+    'font_family': 'Segoe UI',
+    'default_language': 'EN',
+    'background_image': '',
+    'background_opacity': '100',
+    'fit_to_window': 'off',
+    'tab_view': 'sidebar',
+    'backup_folder': 'static/uploads',
+    'theme': 'industrial',
+    'email_address': '',
+    'email_alert_to': '',
+    'currency': 'USD'  # Add this line
+}
+
+    @app.route('/settings/apply', methods=['POST'])
+def settings_apply():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot change settings!', 'error')
+        return redirect(url_for('settings'))
+    set_setting('font_size', request.form.get('font_size', '14'))
+    set_setting('font_family', request.form.get('font_family', 'Segoe UI'))
+    set_setting('default_language', request.form.get('default_language', 'EN'))
+    set_setting('background_opacity', request.form.get('background_opacity', '100'))
+    set_setting('fit_to_window', 'on' if request.form.get('fit_to_window') else 'off')
+    set_setting('tab_view', request.form.get('tab_view', 'sidebar'))
+    set_setting('theme', request.form.get('theme', 'industrial'))
+    set_setting('currency', request.form.get('currency', 'USD'))  # Add this line
+    bg_file = request.files.get('background_image')
+    if bg_file and bg_file.filename:
+        filename = secure_filename(bg_file.filename)
+        bg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        set_setting('background_image', filename)
+    flash('✅ Settings applied!', 'success')
+    return redirect(url_for('settings'))
+
+def get_currency_symbol():
+    settings = get_all_settings()
+    currency = settings.get('currency', 'USD')
+    if currency == 'KGS':
+        return 'сом'
+    return '$'
+
+@app.context_processor
+def inject_settings():
+    settings = get_all_settings()
+    lang = session.get('lang', settings.get('default_language', 'EN'))
+    return {
+        'app_settings': settings,
+        'tr': get_tr(lang),
+        'current_lang': lang,
+        'datetime': datetime,
+        'is_viewer': is_viewer(),
+        'currency_symbol': get_currency_symbol()  # Add this
+    }
