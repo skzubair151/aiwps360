@@ -1,4 +1,4 @@
-# PART 1: DATABASE LAYER (COMPLETE - WITH PRICE FIELD)
+# PART 1: DATABASE LAYER (COMPLETE - WITH PRODUCT IMAGES)
 import sqlite3
 from datetime import datetime
 import hashlib
@@ -23,7 +23,8 @@ class Database:
                 product_name TEXT UNIQUE NOT NULL,
                 unit TEXT DEFAULT 'PCS',
                 created_date TEXT NOT NULL,
-                status TEXT DEFAULT 'Active'
+                status TEXT DEFAULT 'Active',
+                image_path TEXT DEFAULT ''
             )
         ''')
         
@@ -359,16 +360,6 @@ class Database:
             cursor.execute("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'Admin'")
             conn.commit()
         
-        # Add price columns if not exists
-        cursor.execute("PRAGMA table_info(raw_material_entry)")
-        columns = [col[1] for col in cursor.fetchall()]
-        if 'price' not in columns:
-            cursor.execute("ALTER TABLE raw_material_entry ADD COLUMN price REAL DEFAULT 0")
-            conn.commit()
-        if 'total_price' not in columns:
-            cursor.execute("ALTER TABLE raw_material_entry ADD COLUMN total_price REAL DEFAULT 0")
-            conn.commit()
-        
         conn.commit()
         conn.close()
     
@@ -377,18 +368,24 @@ class Database:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         
-        # Default products
+        # Default products with images
         cursor.execute("SELECT COUNT(*) FROM products")
         if cursor.fetchone()[0] == 0:
             today = datetime.now().strftime("%Y-%m-%d")
             default_products = [
-                'Chamber', 'Needle 35mm', 'Needle 39mm', 'Latex', 
-                'Roller', 'Tub', 'Single Pack Poly', 'Multi Pack Poly'
+                ('Chamber', 'PCS', ''),
+                ('Needle 35mm', 'PCS', ''),
+                ('Needle 39mm', 'PCS', ''),
+                ('Latex', 'PCS', ''),
+                ('Roller', 'PCS', ''),
+                ('Tub', 'PCS', ''),
+                ('Single Pack Poly', 'PCS', ''),
+                ('Multi Pack Poly', 'PCS', '')
             ]
             for product in default_products:
                 cursor.execute(
-                    "INSERT INTO products (product_name, created_date) VALUES (?, ?)",
-                    (product, today)
+                    "INSERT INTO products (product_name, unit, created_date, image_path) VALUES (?, ?, ?, ?)",
+                    (product[0], product[1], today, product[2])
                 )
         
         # Insert default stock entries
@@ -498,16 +495,16 @@ class Database:
         return result
     
     # ============================================
-    # PRODUCTS
+    # PRODUCTS (WITH IMAGES)
     # ============================================
-    def add_product(self, product_name, unit='PCS'):
+    def add_product(self, product_name, unit='PCS', image_path=''):
         today = datetime.now().strftime("%Y-%m-%d")
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         try:
             cursor.execute(
-                "INSERT INTO products (product_name, unit, created_date) VALUES (?, ?, ?)",
-                (product_name, unit, today)
+                "INSERT INTO products (product_name, unit, created_date, image_path) VALUES (?, ?, ?, ?)",
+                (product_name, unit, today, image_path)
             )
             cursor.execute(
                 "INSERT INTO warehouse_stock (item_name, quantity, unit) VALUES (?, 0, ?)",
@@ -523,7 +520,7 @@ class Database:
     def get_all_products(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT product_name, unit FROM products WHERE status = 'Active' ORDER BY product_name")
+        cursor.execute("SELECT product_name, unit, image_path FROM products WHERE status = 'Active' ORDER BY product_name")
         results = cursor.fetchall()
         conn.close()
         return results
@@ -532,6 +529,17 @@ class Database:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM products WHERE product_name = ?", (product_name,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    def update_product_image(self, product_name, image_path):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE products SET image_path = ? WHERE product_name = ?",
+            (image_path, product_name)
+        )
         conn.commit()
         conn.close()
         return True
@@ -622,7 +630,7 @@ class Database:
     def get_item_quantity(self, item_name):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT quantity, unit FROM warehouse_stock WHERE item_name = ?", (item_name,))
+        cursor.execute("SELECT quantity, unit FROM warehouse_stock WHERE LOWER(item_name) = LOWER(?)", (item_name,))
         result = cursor.fetchone()
         conn.close()
         return result if result else (0, 'PCS')
@@ -631,7 +639,7 @@ class Database:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE item_name = ?",
+            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE LOWER(item_name) = LOWER(?)",
             (quantity, item_name)
         )
         conn.commit()
@@ -648,7 +656,7 @@ class Database:
             (item_name, quantity, unit, received_by, issued_by, transfer_date, remark)
         )
         cursor.execute(
-            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE item_name = ?",
+            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE LOWER(item_name) = LOWER(?)",
             (quantity, item_name)
         )
         conn.commit()
