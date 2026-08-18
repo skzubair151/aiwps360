@@ -184,7 +184,7 @@ def logout():
     return redirect(url_for('login'))
 
 # ============================================
-# DASHBOARD (FIXED)
+# DASHBOARD
 # ============================================
 @app.route('/')
 def home():
@@ -196,17 +196,14 @@ def home():
     conn = sqlite3.connect('production.db')
     cursor = conn.cursor()
     
-    # Today's Assembly (from assembly_records)
     cursor.execute("SELECT SUM(quantity) FROM assembly_records WHERE assembly_date = ?", (today,))
     today_total = cursor.fetchone()[0] or 0
     
-    # Recent Activity
     cursor.execute(
         "SELECT assembly_date, 'Assembly', assembler_name, quantity FROM assembly_records ORDER BY timestamp DESC LIMIT 5"
     )
     recent = cursor.fetchall()
 
-    # Production totals
     cursor.execute("SELECT SUM(quantity) FROM checking_records")
     total_checking = cursor.fetchone()[0] or 0
     
@@ -229,7 +226,6 @@ def home():
     raw_materials = manager.get_raw_material_entries()
     all_products = manager.get_all_products()
 
-    # Build stock by item with invoice breakdown
     stock_by_item = {}
     for p in all_products:
         stock_by_item[p[0]] = {'entries': [], 'total': 0, 'unit': p[1]}
@@ -239,26 +235,10 @@ def home():
         invoice_number = r[4]
         quantity = r[6]
         unit = r[7]
-        price = r[8] if len(r) > 8 else 0
-        total_price = r[9] if len(r) > 9 else 0
-        
         if item_name not in stock_by_item:
             stock_by_item[item_name] = {'entries': [], 'total': 0, 'unit': unit}
-        stock_by_item[item_name]['entries'].append({
-            'invoice': invoice_number,
-            'qty': quantity,
-            'price': price,
-            'total': total_price
-        })
+        stock_by_item[item_name]['entries'].append((invoice_number, quantity))
         stock_by_item[item_name]['total'] += quantity
-
-    # Add stock from warehouse_stock table
-    for item_name, qty, unit in stock:
-        if item_name not in stock_by_item:
-            stock_by_item[item_name] = {'entries': [], 'total': 0, 'unit': unit}
-        # If no entries but stock exists, show stock directly
-        if not stock_by_item[item_name]['entries']:
-            stock_by_item[item_name]['total'] = qty
 
     thresholds = get_thresholds()
     for item_name in stock_by_item:
@@ -278,8 +258,7 @@ def home():
         total_packing=total_packing,
         total_sealing=total_sealing,
         total_sterilized=total_sterilized,
-        is_viewer=is_viewer(),
-        currency_symbol=get_currency_symbol()
+        is_viewer=is_viewer()
     )
 
 # ============================================
@@ -984,107 +963,7 @@ def reports():
     )
 
 # ============================================
-# SETTINGS ROUTES
-# ============================================
-@app.route('/settings')
-def settings():
-    if login_required():
-        return redirect(url_for('login'))
-    return render_template('settings.html', active='settings', is_viewer=is_viewer())
-
-@app.route('/settings/apply', methods=['POST'])
-def settings_apply():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot change settings!', 'error')
-        return redirect(url_for('settings'))
-    set_setting('font_size', request.form.get('font_size', '14'))
-    set_setting('font_family', request.form.get('font_family', 'Segoe UI'))
-    set_setting('default_language', request.form.get('default_language', 'EN'))
-    set_setting('background_opacity', request.form.get('background_opacity', '100'))
-    set_setting('fit_to_window', 'on' if request.form.get('fit_to_window') else 'off')
-    set_setting('tab_view', request.form.get('tab_view', 'sidebar'))
-    set_setting('theme', request.form.get('theme', 'industrial'))
-    set_setting('currency', request.form.get('currency', 'USD'))
-    bg_file = request.files.get('background_image')
-    if bg_file and bg_file.filename:
-        filename = secure_filename(bg_file.filename)
-        bg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        set_setting('background_image', filename)
-    flash('✅ Settings applied!', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/remove_background', methods=['POST'])
-def settings_remove_background():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot remove background!', 'error')
-        return redirect(url_for('settings'))
-    set_setting('background_image', '')
-    flash('✅ Background image removed!', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/set_backup_folder', methods=['POST'])
-def settings_set_backup_folder():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot change backup folder!', 'error')
-        return redirect(url_for('settings'))
-    set_setting('backup_folder', request.form.get('backup_folder', 'static/uploads'))
-    flash('✅ Backup folder saved!', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/reset_appearance', methods=['POST'])
-def settings_reset_appearance():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot reset appearance!', 'error')
-        return redirect(url_for('settings'))
-    for key, value in DEFAULT_SETTINGS.items():
-        set_setting(key, value)
-    flash('✅ Appearance reset to default!', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/backup', methods=['POST'])
-def settings_backup():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot create backups!', 'error')
-        return redirect(url_for('settings'))
-    import shutil
-    settings_now = get_all_settings()
-    backup_folder = settings_now.get('backup_folder', 'static/uploads')
-    os.makedirs(backup_folder, exist_ok=True)
-    backup_name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
-    backup_path = os.path.join(backup_folder, backup_name)
-    shutil.copy2('production.db', backup_path)
-    flash(f'✅ Backup created: {backup_path}', 'success')
-    return redirect(url_for('settings'))
-
-@app.route('/settings/restore', methods=['POST'])
-def settings_restore():
-    if login_required():
-        return redirect(url_for('login'))
-    if is_viewer():
-        flash('❌ Viewers cannot restore database!', 'error')
-        return redirect(url_for('settings'))
-    restore_file = request.files.get('restore_file')
-    if not restore_file or not restore_file.filename.endswith('.db'):
-        flash('❌ Please choose a valid .db backup file!', 'error')
-        return redirect(url_for('settings'))
-    import shutil
-    shutil.copy2('production.db', 'production_before_restore.db')
-    restore_file.save('production.db')
-    flash('✅ Database restored! Please restart the app.', 'success')
-    return redirect(url_for('settings'))
-
-# ============================================
-# PDF EXPORT (FULLY WORKING)
+# PDF EXPORT
 # ============================================
 try:
     from reportlab.lib import colors
@@ -1191,7 +1070,7 @@ except ImportError:
     print("⚠️ ReportLab not installed.")
 
 # ============================================
-# EXCEL EXPORT (FULLY WORKING)
+# EXCEL EXPORT
 # ============================================
 try:
     from openpyxl import Workbook
@@ -1414,6 +1293,106 @@ try:
     
 except ImportError:
     print("⚠️ Email module not fully configured.")
+
+# ============================================
+# SETTINGS ROUTES
+# ============================================
+@app.route('/settings')
+def settings():
+    if login_required():
+        return redirect(url_for('login'))
+    return render_template('settings.html', active='settings', is_viewer=is_viewer())
+
+@app.route('/settings/apply', methods=['POST'])
+def settings_apply():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot change settings!', 'error')
+        return redirect(url_for('settings'))
+    set_setting('font_size', request.form.get('font_size', '14'))
+    set_setting('font_family', request.form.get('font_family', 'Segoe UI'))
+    set_setting('default_language', request.form.get('default_language', 'EN'))
+    set_setting('background_opacity', request.form.get('background_opacity', '100'))
+    set_setting('fit_to_window', 'on' if request.form.get('fit_to_window') else 'off')
+    set_setting('tab_view', request.form.get('tab_view', 'sidebar'))
+    set_setting('theme', request.form.get('theme', 'industrial'))
+    set_setting('currency', request.form.get('currency', 'USD'))
+    bg_file = request.files.get('background_image')
+    if bg_file and bg_file.filename:
+        filename = secure_filename(bg_file.filename)
+        bg_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        set_setting('background_image', filename)
+    flash('✅ Settings applied!', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/remove_background', methods=['POST'])
+def settings_remove_background():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot remove background!', 'error')
+        return redirect(url_for('settings'))
+    set_setting('background_image', '')
+    flash('✅ Background image removed!', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/set_backup_folder', methods=['POST'])
+def settings_set_backup_folder():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot change backup folder!', 'error')
+        return redirect(url_for('settings'))
+    set_setting('backup_folder', request.form.get('backup_folder', 'static/uploads'))
+    flash('✅ Backup folder saved!', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/reset_appearance', methods=['POST'])
+def settings_reset_appearance():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot reset appearance!', 'error')
+        return redirect(url_for('settings'))
+    for key, value in DEFAULT_SETTINGS.items():
+        set_setting(key, value)
+    flash('✅ Appearance reset to default!', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/backup', methods=['POST'])
+def settings_backup():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot create backups!', 'error')
+        return redirect(url_for('settings'))
+    import shutil
+    settings_now = get_all_settings()
+    backup_folder = settings_now.get('backup_folder', 'static/uploads')
+    os.makedirs(backup_folder, exist_ok=True)
+    backup_name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
+    backup_path = os.path.join(backup_folder, backup_name)
+    shutil.copy2('production.db', backup_path)
+    flash(f'✅ Backup created: {backup_path}', 'success')
+    return redirect(url_for('settings'))
+
+@app.route('/settings/restore', methods=['POST'])
+def settings_restore():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Viewers cannot restore database!', 'error')
+        return redirect(url_for('settings'))
+    restore_file = request.files.get('restore_file')
+    if not restore_file or not restore_file.filename.endswith('.db'):
+        flash('❌ Please choose a valid .db backup file!', 'error')
+        return redirect(url_for('settings'))
+    import shutil
+    shutil.copy2('production.db', 'production_before_restore.db')
+    restore_file.save('production.db')
+    flash('✅ Database restored! Please restart the app.', 'success')
+    return redirect(url_for('settings'))
 
 # ============================================
 # MAIN
