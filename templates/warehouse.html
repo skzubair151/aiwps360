@@ -2,7 +2,6 @@
 {% block content %}
 
 {% if app_settings.tab_view == 'topbar' %}
-    <!-- TOPBAR STYLE -->
     <div class="dept-layout-topbar">
         <div class="dept-sidebar-topbar" id="wh-sidebar">
             <button data-target="wh-suppliers" class="active"><i class="fas fa-truck"></i> {{ tr('wh_suppliers') }}</button>
@@ -12,7 +11,6 @@
         </div>
         <div class="dept-content-topbar">
 {% else %}
-    <!-- SIDEBAR STYLE (DEFAULT) -->
     <div class="dept-layout">
         <div class="dept-sidebar" id="wh-sidebar">
             <button data-target="wh-suppliers" class="active"><i class="fas fa-truck"></i> {{ tr('wh_suppliers') }}</button>
@@ -147,6 +145,10 @@
                                         </div>
                                     </div>
                                     <div class="mb-3">
+                                        <label class="form-label">Price per Unit ({{ currency_symbol }})</label>
+                                        <input type="number" name="price" step="0.01" class="form-control" value="0" required>
+                                    </div>
+                                    <div class="mb-3">
                                         <label class="form-label">{{ tr('wh_received_by') }}</label>
                                         <input type="text" name="received_by" class="form-control" required>
                                     </div>
@@ -176,6 +178,10 @@
                                                 <th>{{ tr('wh_supplier_col') }}</th>
                                                 <th>{{ tr('wh_item_name') }}</th>
                                                 <th>{{ tr('quantity') }}</th>
+                                                <th>{{ tr('unit') }}</th>
+                                                <th>Price/Unit</th>
+                                                <th>Total Price</th>
+                                                <th>{{ tr('wh_received_by') }}</th>
                                                 {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
@@ -186,6 +192,10 @@
                                                 <td>{{ r[1] }}</td>
                                                 <td>{{ r[5] }}</td>
                                                 <td>{{ r[6] }}</td>
+                                                <td>{{ r[7] }}</td>
+                                                <td>{{ currency_symbol }}{{ "%.2f"|format(r[8]) }}</td>
+                                                <td><strong>{{ currency_symbol }}{{ "%.2f"|format(r[9]) }}</strong></td>
+                                                <td>{{ r[10] }}</td>
                                                 {% if not is_viewer %}
                                                 <td>
                                                     <form method="post" action="/warehouse/delete_raw_material/{{ r[0] }}" style="display:inline;" onsubmit="return confirm('Delete this entry?')">
@@ -339,124 +349,5 @@
     });
 })();
 </script>
-
-<!-- Raw Material Tab -->
-<div class="tab-pane fade" id="wh-raw">
-    <div class="row g-4">
-        <div class="col-xl-5">
-            {% if not is_viewer %}
-            <div class="card card-modern">
-                <div class="card-header-modern">
-                    <h5><i class="fas fa-plus-circle text-success me-2"></i> {{ tr('wh_receive_raw') }}</h5>
-                </div>
-                <div class="card-body-modern">
-                    <form method="post" action="/warehouse/add_raw_material">
-                        <div class="mb-3">
-                            <label class="form-label">{{ tr('wh_supplier_name') }}</label>
-                            <input type="text" name="supplier_name" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">{{ tr('wh_invoice_num') }}</label>
-                            <input type="text" name="invoice_number" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">{{ tr('wh_item_name') }}</label>
-                            <select name="item_name" class="form-select" required>
-                                <option value="">-- Select Item --</option>
-                                {% for p in products %}
-                                <option value="{{ p[0] }}">{{ p[0] }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">{{ tr('quantity') }}</label>
-                                    <input type="number" name="quantity" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">{{ tr('unit') }}</label>
-                                    <select name="unit" class="form-select">
-                                        <option value="PCS">{{ tr('pcs') }}</option>
-                                        <option value="KG">KG</option>
-                                        <option value="BOX">BOX</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Price Field -->
-                        <div class="mb-3">
-                            <label class="form-label">Price per Unit ({{ currency_symbol }})</label>
-                            <input type="number" name="price" step="0.01" class="form-control" value="0" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">{{ tr('wh_received_by') }}</label>
-                            <input type="text" name="received_by" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">{{ tr('date') }}</label>
-                            <input type="date" name="entry_date" class="form-control" value="{{ datetime.now().strftime('%Y-%m-%d') }}" required>
-                        </div>
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-plus me-1"></i> {{ tr('wh_record_entry') }}
-                        </button>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-        <div class="col-xl-7">
-            <div class="card card-modern">
-                <div class="card-header-modern">
-                    <h5><i class="fas fa-history me-2 text-success"></i> {{ tr('wh_raw_entries') }}</h5>
-                </div>
-                <div class="card-body-modern p-0">
-                    <div class="table-responsive">
-                        <table class="table table-modern">
-                            <thead>
-                                <tr>
-                                    <th>{{ tr('date') }}</th>
-                                    <th>{{ tr('wh_supplier_col') }}</th>
-                                    <th>{{ tr('wh_item_name') }}</th>
-                                    <th>{{ tr('quantity') }}</th>
-                                    <th>{{ tr('unit') }}</th>
-                                    <th>Price/Unit</th>
-                                    <th>Total Price</th>
-                                    <th>{{ tr('wh_received_by') }}</th>
-                                    {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for r in raw_materials %}
-                                <tr>
-                                    <td>{{ r[3] }}</td>
-                                    <td>{{ r[1] }}</td>
-                                    <td>{{ r[5] }}</td>
-                                    <td>{{ r[6] }}</td>
-                                    <td>{{ r[7] }}</td>
-                                    <td>{{ currency_symbol }}{{ "%.2f"|format(r[8]) }}</td>
-                                    <td><strong>{{ currency_symbol }}{{ "%.2f"|format(r[9]) }}</strong></td>
-                                    <td>{{ r[10] }}</td>
-                                    {% if not is_viewer %}
-                                    <td>
-                                        <form method="post" action="/warehouse/delete_raw_material/{{ r[0] }}" style="display:inline;" onsubmit="return confirm('Delete this entry?')">
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                    {% endif %}
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 {% endblock %}
