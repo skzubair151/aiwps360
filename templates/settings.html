@@ -72,11 +72,23 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
+                                        <label class="form-label">Currency</label>
+                                        <select name="currency" class="form-select">
+                                            <option value="USD" {% if app_settings.currency == 'USD' %}selected{% endif %}>🇺🇸 USD ($)</option>
+                                            <option value="KGS" {% if app_settings.currency == 'KGS' %}selected{% endif %}>🇰🇬 KGS (сом)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
                                         <label class="form-label">{{ tr('set_bg_image') }}</label>
                                         <input type="file" name="background_image" accept="image/*" class="form-control">
                                         <small class="text-muted">Leave empty to keep current background.</small>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">{{ tr('set_bg_trans') }}</label>
@@ -84,15 +96,15 @@
                                         <div class="text-center" id="opacityDisplay">{{ app_settings.background_opacity }}%</div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3 form-check">
                                         <input type="checkbox" name="fit_to_window" class="form-check-input" {% if app_settings.fit_to_window == 'on' %}checked{% endif %}>
                                         <label class="form-check-label">{{ tr('set_fit_window') }}</label>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label">{{ tr('set_tab_view') }}</label>

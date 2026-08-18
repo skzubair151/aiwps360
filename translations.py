@@ -39,6 +39,8 @@ EN = {
     'reset_default': 'Reset to Default',
     'quantity': 'Quantity',
     'action': 'Action',
+    'currency_usd': 'USD ($)',
+    'currency_kgs': 'KGS (сом)',
 
     # Dashboard
     'dash_summary': '📊 Summary',
@@ -278,6 +280,8 @@ RU = {
     'reset_default': 'По умолчанию',
     'quantity': 'Количество',
     'action': 'Действие',
+    'currency_usd': 'USD ($)',
+    'currency_kgs': 'KGS (сом)',
 
     # Dashboard
     'dash_summary': '📊 Сводка',
