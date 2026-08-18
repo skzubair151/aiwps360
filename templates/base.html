@@ -30,15 +30,28 @@
         }
 
         /* ============================================ */
-        /* CUSTOM BRAND COLORS                          */
+        /* BACKGROUND IMAGE SUPPORT                     */
         /* ============================================ */
-        :root {
-            --brand-primary: #1a56db;
-            --brand-primary-light: #3b82f6;
-            --brand-primary-dark: #1e40af;
-            --brand-secondary: #059669;
-            --brand-accent: #f59e0b;
+        {% if app_settings.background_image %}
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: url('{{ url_for("static", filename="uploads/" + app_settings.background_image) }}');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            opacity: {{ app_settings.background_opacity }}%;
         }
+        {% endif %}
+
+        /* ============================================ */
+        /* FIT TO WINDOW                               */
+        /* ============================================ */
+        {% if app_settings.fit_to_window == 'on' %}
+        html, body { height: 100vh; overflow: hidden; }
+        .main-content { height: 100vh; overflow-y: auto; }
+        {% endif %}
 
         .app-layout {
             display: flex;
@@ -544,6 +557,10 @@
 </head>
 <body>
 
+    {% if app_settings.background_image %}
+    <div class="bg-layer"></div>
+    {% endif %}
+
     <div class="main-sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="app-layout">
@@ -671,9 +688,7 @@
         }
     });
 
-    // ============================================ //
-    // DARK MODE                                    //
-    // ============================================ //
+    // Dark Mode
     function toggleDarkMode() {
         const body = document.body;
         const toggle = document.getElementById('darkModeToggle');
@@ -688,7 +703,6 @@
         }
     }
 
-    // Load dark mode preference on page load
     document.addEventListener('DOMContentLoaded', function() {
         if (localStorage.getItem('darkMode') === 'enabled') {
             document.body.classList.add('dark-mode');

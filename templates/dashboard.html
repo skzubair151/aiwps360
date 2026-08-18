@@ -5,9 +5,7 @@
 <div class="row g-4 mb-4">
     <div class="col-xl-3 col-lg-6 col-md-6">
         <div class="stat-card stat-card-primary">
-            <div class="stat-icon">
-                <i class="fas fa-industry"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-industry"></i></div>
             <div class="stat-info">
                 <h3>{{ today_total }} <span>PCS</span></h3>
                 <p>{{ tr('dash_today_prod') }}</p>
@@ -16,9 +14,7 @@
     </div>
     <div class="col-xl-3 col-lg-6 col-md-6">
         <div class="stat-card stat-card-success">
-            <div class="stat-icon">
-                <i class="fas fa-users"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
             <div class="stat-info">
                 <h3>{{ total_employees }}</h3>
                 <p>{{ tr('dash_total_emp') }}</p>
@@ -27,9 +23,7 @@
     </div>
     <div class="col-xl-3 col-lg-6 col-md-6">
         <div class="stat-card stat-card-warning">
-            <div class="stat-icon">
-                <i class="fas fa-boxes"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-boxes"></i></div>
             <div class="stat-info">
                 <h3>{{ stock['total_items'] }}</h3>
                 <p>{{ tr('dash_wh_stock') }}</p>
@@ -38,9 +32,7 @@
     </div>
     <div class="col-xl-3 col-lg-6 col-md-6">
         <div class="stat-card stat-card-danger">
-            <div class="stat-icon">
-                <i class="fas fa-calendar-check"></i>
-            </div>
+            <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
             <div class="stat-info">
                 <h3>{{ total_sterilized }}</h3>
                 <p>{{ tr('dash_sterilized') }}</p>
@@ -118,17 +110,20 @@
                                     <td colspan="2">
                                         <strong>{{ item_name }}</strong>
                                         {% if data.low_stock %}
-                                            <span class="badge bg-danger ms-2">LOW STOCK</span>
+                                            <span class="badge bg-danger ms-2">⚠️ LOW STOCK</span>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% if data.entries %}
-                                    {% for invoice_number, qty in data.entries %}
+                                    {% for entry in data.entries %}
                                     <tr>
                                         <td style="padding-left:30px;">
-                                            <span class="text-muted">📄 {{ invoice_number }}</span>
+                                            <span class="text-muted">📄 {{ entry.invoice }}</span>
+                                            {% if entry.price > 0 %}
+                                                <span class="text-muted ms-2">({{ currency_symbol }}{{ "%.2f"|format(entry.price) }}/unit)</span>
+                                            {% endif %}
                                         </td>
-                                        <td class="text-end">{{ qty }}</td>
+                                        <td class="text-end">{{ entry.qty }}</td>
                                     </tr>
                                     {% endfor %}
                                 {% else %}
@@ -174,6 +169,10 @@
                                 <td>{{ r[2] }}</td>
                                 <td class="text-end">{{ r[3] }}</td>
                             </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No recent activity</td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -183,6 +182,7 @@
     </div>
 </div>
 
+<!-- Chart.js Script -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

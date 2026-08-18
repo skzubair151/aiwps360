@@ -29,10 +29,10 @@
                     <div class="card-header-modern">
                         <h5><i class="fas fa-chart-pie text-primary me-2"></i> {{ tr('rep_summary') }}</h5>
                         <div>
-                            <a href="/export_pdf/summary" class="btn btn-sm btn-danger me-1">
+                            <a href="/export_pdf/summary" class="btn btn-sm btn-danger me-1" title="Download PDF">
                                 <i class="fas fa-file-pdf me-1"></i> PDF
                             </a>
-                            <a href="/export_excel/summary" class="btn btn-sm btn-success">
+                            <a href="/export_excel/summary" class="btn btn-sm btn-success" title="Download Excel">
                                 <i class="fas fa-file-excel me-1"></i> Excel
                             </a>
                         </div>
@@ -86,10 +86,10 @@
                     <div class="card-header-modern">
                         <h5><i class="fas fa-industry text-primary me-2"></i> {{ tr('rep_prod_report') }}</h5>
                         <div>
-                            <a href="/export_pdf/production" class="btn btn-sm btn-danger me-1">
+                            <a href="/export_pdf/production" class="btn btn-sm btn-danger me-1" title="Download PDF">
                                 <i class="fas fa-file-pdf me-1"></i> PDF
                             </a>
-                            <a href="/export_excel/production" class="btn btn-sm btn-success">
+                            <a href="/export_excel/production" class="btn btn-sm btn-success" title="Download Excel">
                                 <i class="fas fa-file-excel me-1"></i> Excel
                             </a>
                         </div>
@@ -115,6 +115,10 @@
                                         <td>{{ r[3] }}</td>
                                         <td>{{ r[4] }}</td>
                                     </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No production records found</td>
+                                    </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -129,10 +133,10 @@
                     <div class="card-header-modern">
                         <h5><i class="fas fa-warehouse text-warning me-2"></i> {{ tr('rep_wh_report') }}</h5>
                         <div>
-                            <a href="/export_pdf/warehouse" class="btn btn-sm btn-danger me-1">
+                            <a href="/export_pdf/warehouse" class="btn btn-sm btn-danger me-1" title="Download PDF">
                                 <i class="fas fa-file-pdf me-1"></i> PDF
                             </a>
-                            <a href="/export_excel/warehouse" class="btn btn-sm btn-success">
+                            <a href="/export_excel/warehouse" class="btn btn-sm btn-success" title="Download Excel">
                                 <i class="fas fa-file-excel me-1"></i> Excel
                             </a>
                         </div>
@@ -154,6 +158,10 @@
                                         <td class="text-end"><strong>{{ s[1] }}</strong></td>
                                         <td>{{ s[2] }}</td>
                                     </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No stock items found</td>
+                                    </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -168,10 +176,10 @@
                     <div class="card-header-modern">
                         <h5><i class="fas fa-vial text-success me-2"></i> {{ tr('rep_ster_report') }}</h5>
                         <div>
-                            <a href="/export_pdf/sterilization" class="btn btn-sm btn-danger me-1">
+                            <a href="/export_pdf/sterilization" class="btn btn-sm btn-danger me-1" title="Download PDF">
                                 <i class="fas fa-file-pdf me-1"></i> PDF
                             </a>
-                            <a href="/export_excel/sterilization" class="btn btn-sm btn-success">
+                            <a href="/export_excel/sterilization" class="btn btn-sm btn-success" title="Download Excel">
                                 <i class="fas fa-file-excel me-1"></i> Excel
                             </a>
                         </div>
@@ -197,6 +205,10 @@
                                         <td><strong>{{ e[4] }}</strong></td>
                                         <td>{{ e[2] }}</td>
                                     </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No sterilization records found</td>
+                                    </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -211,10 +223,10 @@
                     <div class="card-header-modern">
                         <h5><i class="fas fa-user-clock text-danger me-2"></i> {{ tr('rep_att_report') }}</h5>
                         <div>
-                            <a href="/export_pdf/attendance" class="btn btn-sm btn-danger me-1">
+                            <a href="/export_pdf/attendance" class="btn btn-sm btn-danger me-1" title="Download PDF">
                                 <i class="fas fa-file-pdf me-1"></i> PDF
                             </a>
-                            <a href="/export_excel/attendance" class="btn btn-sm btn-success">
+                            <a href="/export_excel/attendance" class="btn btn-sm btn-success" title="Download Excel">
                                 <i class="fas fa-file-excel me-1"></i> Excel
                             </a>
                         </div>
@@ -260,6 +272,10 @@
                                             {% endif %}
                                         </td>
                                         <td>{{ a[4] }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">No attendance records found</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
