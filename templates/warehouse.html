@@ -1,6 +1,48 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+    .product-image {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+        transition: transform 0.2s;
+    }
+    .product-image:hover {
+        transform: scale(2);
+        z-index: 999;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .product-image-placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 20px;
+        border: 2px dashed #cbd5e1;
+    }
+    .product-image-upload {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 11px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .product-image-upload:hover {
+        background: #4f46e5;
+        color: white;
+    }
+</style>
+
 {% if app_settings.tab_view == 'topbar' %}
     <div class="dept-layout-topbar">
         <div class="dept-sidebar-topbar" id="wh-sidebar">
@@ -226,7 +268,7 @@
                                 <h5><i class="fas fa-plus-circle text-warning me-2"></i> {{ tr('wh_add_product') }}</h5>
                             </div>
                             <div class="card-body-modern">
-                                <form method="post" action="/warehouse/add_product">
+                                <form method="post" action="/warehouse/add_product" enctype="multipart/form-data">
                                     <div class="mb-3">
                                         <label class="form-label">{{ tr('wh_product_name') }}</label>
                                         <input type="text" name="product_name" class="form-control" required>
@@ -238,6 +280,11 @@
                                             <option value="BOX">BOX</option>
                                             <option value="KG">KG</option>
                                         </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Product Image (150x150px)</label>
+                                        <input type="file" name="product_image" accept="image/*" class="form-control">
+                                        <small class="text-muted">Recommended: 150x150 pixels</small>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">{{ tr('wh_low_stock_qty') }}</label>
@@ -261,16 +308,42 @@
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
+                                                <th>Image</th>
                                                 <th>{{ tr('wh_product_col') }}</th>
                                                 <th>{{ tr('unit') }}</th>
+                                                <th>Upload</th>
                                                 {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {% for p in products %}
                                             <tr>
+                                                <td>
+                                                    {% if p[2] and p[2] != '' %}
+                                                        <img src="{{ url_for('static', filename=p[2]) }}" alt="{{ p[0] }}" class="product-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                        <div class="product-image-placeholder" style="display:none;">
+                                                            <i class="fas fa-box"></i>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="product-image-placeholder">
+                                                            <i class="fas fa-box"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </td>
                                                 <td>{{ p[0] }}</td>
                                                 <td>{{ p[1] }}</td>
+                                                <td>
+                                                    {% if not is_viewer %}
+                                                    <form method="post" action="/warehouse/upload_product_image/{{ p[0] }}" enctype="multipart/form-data" style="display:flex; gap:5px; align-items:center;">
+                                                        <input type="file" name="product_image" accept="image/*" style="display:none;" id="file-{{ loop.index }}" onchange="this.form.submit()">
+                                                        <label for="file-{{ loop.index }}" class="product-image-upload">
+                                                            <i class="fas fa-upload"></i> Upload
+                                                        </label>
+                                                    </form>
+                                                    {% else %}
+                                                    <span class="text-muted">View only</span>
+                                                    {% endif %}
+                                                </td>
                                                 {% if not is_viewer %}
                                                 <td>
                                                     <form method="post" action="/warehouse/delete_product/{{ p[0] }}" style="display:inline;" onsubmit="return confirm('Delete this product?')">

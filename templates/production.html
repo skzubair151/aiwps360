@@ -2,52 +2,52 @@
 {% block content %}
 
 {% if app_settings.tab_view == 'topbar' %}
-    <!-- TOPBAR STYLE -->
     <div class="dept-layout-topbar">
         <div class="dept-sidebar-topbar" id="prod-sidebar">
-            <button data-target="p-transfer" class="active"><i class="fas fa-exchange-alt"></i> Transfer</button>
-            <button data-target="p-checking"><i class="fas fa-check-double"></i> Checking</button>
-            <button data-target="p-assembly"><i class="fas fa-tools"></i> Assembly</button>
-            <button data-target="p-packing"><i class="fas fa-box"></i> Packing (LOT)</button>
-            <button data-target="p-sealing"><i class="fas fa-lock"></i> Sealing</button>
-            <button data-target="p-ster-entry"><i class="fas fa-vial"></i> Sterilization Entry</button>
-            <button data-target="p-ster-start"><i class="fas fa-play"></i> Sterilization Start</button>
-            <button data-target="p-ster-finish"><i class="fas fa-stop"></i> Sterilization Finish</button>
-            <button data-target="p-pack-after"><i class="fas fa-box-open"></i> Packing After Sterile</button>
+            <button data-target="p-transfer" class="active"><i class="fas fa-exchange-alt"></i> {{ tr('prod_transfer') }}</button>
+            <button data-target="p-checking"><i class="fas fa-check-double"></i> {{ tr('prod_checking') }}</button>
+            <button data-target="p-assembly"><i class="fas fa-tools"></i> {{ tr('prod_assembly') }}</button>
+            <button data-target="p-packing"><i class="fas fa-box"></i> {{ tr('prod_packing') }}</button>
+            <button data-target="p-sealing"><i class="fas fa-lock"></i> {{ tr('prod_sealing') }}</button>
+            <button data-target="p-ster-entry"><i class="fas fa-vial"></i> {{ tr('prod_ster_entry') }}</button>
+            <button data-target="p-ster-start"><i class="fas fa-play"></i> {{ tr('prod_ster_start') }}</button>
+            <button data-target="p-ster-finish"><i class="fas fa-stop"></i> {{ tr('prod_ster_finish') }}</button>
+            <button data-target="p-pack-after"><i class="fas fa-box-open"></i> {{ tr('prod_pack_after') }}</button>
         </div>
         <div class="dept-content-topbar">
 {% else %}
-    <!-- SIDEBAR STYLE (DEFAULT) -->
     <div class="dept-layout">
         <div class="dept-sidebar" id="prod-sidebar">
-            <button data-target="p-transfer" class="active"><i class="fas fa-exchange-alt"></i> Transfer</button>
-            <button data-target="p-checking"><i class="fas fa-check-double"></i> Checking</button>
-            <button data-target="p-assembly"><i class="fas fa-tools"></i> Assembly</button>
-            <button data-target="p-packing"><i class="fas fa-box"></i> Packing (LOT)</button>
-            <button data-target="p-sealing"><i class="fas fa-lock"></i> Sealing</button>
-            <button data-target="p-ster-entry"><i class="fas fa-vial"></i> Sterilization Entry</button>
-            <button data-target="p-ster-start"><i class="fas fa-play"></i> Sterilization Start</button>
-            <button data-target="p-ster-finish"><i class="fas fa-stop"></i> Sterilization Finish</button>
-            <button data-target="p-pack-after"><i class="fas fa-box-open"></i> Packing After Sterile</button>
+            <button data-target="p-transfer" class="active"><i class="fas fa-exchange-alt"></i> {{ tr('prod_transfer') }}</button>
+            <button data-target="p-checking"><i class="fas fa-check-double"></i> {{ tr('prod_checking') }}</button>
+            <button data-target="p-assembly"><i class="fas fa-tools"></i> {{ tr('prod_assembly') }}</button>
+            <button data-target="p-packing"><i class="fas fa-box"></i> {{ tr('prod_packing') }}</button>
+            <button data-target="p-sealing"><i class="fas fa-lock"></i> {{ tr('prod_sealing') }}</button>
+            <button data-target="p-ster-entry"><i class="fas fa-vial"></i> {{ tr('prod_ster_entry') }}</button>
+            <button data-target="p-ster-start"><i class="fas fa-play"></i> {{ tr('prod_ster_start') }}</button>
+            <button data-target="p-ster-finish"><i class="fas fa-stop"></i> {{ tr('prod_ster_finish') }}</button>
+            <button data-target="p-pack-after"><i class="fas fa-box-open"></i> {{ tr('prod_pack_after') }}</button>
         </div>
         <div class="dept-content">
 {% endif %}
 
-            <!-- Transfer Panel -->
+            <!-- ============================================ -->
+            <!-- TRANSFER TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel active" id="p-transfer">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-plus-circle text-primary me-2"></i> Transfer Warehouse → Production</h5>
+                                <h5><i class="fas fa-plus-circle text-primary me-2"></i> {{ tr('prod_transfer_title') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/transfer">
                                     <div class="mb-3">
-                                        <label class="form-label">Item Name</label>
+                                        <label class="form-label">{{ tr('wh_item_name') }}</label>
                                         <select name="item_name" class="form-select" required>
-                                            <option value="">-- Select Item --</option>
+                                            <option value="">-- {{ tr('wh_item_name') }} --</option>
                                             {% for p in products %}
                                             <option value="{{ p[0] }}">{{ p[0] }}</option>
                                             {% endfor %}
@@ -56,15 +56,15 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Quantity</label>
+                                                <label class="form-label">{{ tr('quantity') }}</label>
                                                 <input type="number" name="quantity" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Unit</label>
+                                                <label class="form-label">{{ tr('unit') }}</label>
                                                 <select name="unit" class="form-select">
-                                                    <option value="PCS">PCS</option>
+                                                    <option value="PCS">{{ tr('pcs') }}</option>
                                                     <option value="KG">KG</option>
                                                     <option value="BOX">BOX</option>
                                                 </select>
@@ -72,15 +72,15 @@
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Received By (Production)</label>
+                                        <label class="form-label">{{ tr('prod_received_by') }}</label>
                                         <input type="text" name="received_by" class="form-control" required>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Issued By (Warehouse)</label>
+                                        <label class="form-label">{{ tr('prod_issued_by') }}</label>
                                         <input type="text" name="issued_by" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-arrow-right me-1"></i> Transfer
+                                        <i class="fas fa-arrow-right me-1"></i> {{ tr('prod_transfer_btn') }}
                                     </button>
                                 </form>
                             </div>
@@ -90,19 +90,19 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-primary"></i> Transfer History</h5>
+                                <h5><i class="fas fa-history me-2 text-primary"></i> {{ tr('prod_transfer_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date</th>
-                                                <th>Item</th>
-                                                <th>Qty</th>
-                                                <th>Received By</th>
-                                                <th>Issued By</th>
-                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('wh_item_name') }}</th>
+                                                <th>{{ tr('quantity') }}</th>
+                                                <th>{{ tr('prod_received') }}</th>
+                                                <th>{{ tr('prod_issued') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -133,33 +133,36 @@
                 </div>
             </div>
 
-            <!-- Checking Panel -->
+            <!-- ============================================ -->
+            <!-- CHECKING TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel" id="p-checking">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-plus-circle text-success me-2"></i> Checking</h5>
+                                <h5><i class="fas fa-plus-circle text-success me-2"></i> {{ tr('prod_checking') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/checking">
+                                    <input type="hidden" name="tab" value="checking">
                                     <div class="mb-3">
-                                        <label class="form-label">Item Name</label>
+                                        <label class="form-label">{{ tr('wh_item_name') }}</label>
                                         <input type="text" name="item_name" class="form-control" required>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Quantity</label>
+                                                <label class="form-label">{{ tr('quantity') }}</label>
                                                 <input type="number" name="quantity" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Unit</label>
+                                                <label class="form-label">{{ tr('unit') }}</label>
                                                 <select name="unit" class="form-select">
-                                                    <option value="PCS">PCS</option>
+                                                    <option value="PCS">{{ tr('pcs') }}</option>
                                                     <option value="KG">KG</option>
                                                     <option value="BOX">BOX</option>
                                                 </select>
@@ -167,11 +170,11 @@
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Checker Name</label>
+                                        <label class="form-label">{{ tr('prod_checker_name') }}</label>
                                         <input type="text" name="checker_name" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-check me-1"></i> Record Check
+                                        <i class="fas fa-check me-1"></i> {{ tr('prod_record_check') }}
                                     </button>
                                 </form>
                             </div>
@@ -181,18 +184,18 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-success"></i> Checking History</h5>
+                                <h5><i class="fas fa-history me-2 text-success"></i> {{ tr('prod_checking_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date</th>
-                                                <th>Item</th>
-                                                <th>Qty</th>
-                                                <th>Checker</th>
-                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('wh_item_name') }}</th>
+                                                <th>{{ tr('quantity') }}</th>
+                                                <th>{{ tr('prod_checker') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -222,39 +225,42 @@
                 </div>
             </div>
 
-            <!-- Assembly Panel -->
+            <!-- ============================================ -->
+            <!-- ASSEMBLY TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel" id="p-assembly">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-tools text-warning me-2"></i> Assembly</h5>
+                                <h5><i class="fas fa-tools text-warning me-2"></i> {{ tr('prod_assembly') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/assembly">
+                                    <input type="hidden" name="tab" value="assembly">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Quantity</label>
+                                                <label class="form-label">{{ tr('quantity') }}</label>
                                                 <input type="number" name="quantity" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Unit</label>
+                                                <label class="form-label">{{ tr('unit') }}</label>
                                                 <select name="unit" class="form-select">
-                                                    <option value="PCS">PCS</option>
+                                                    <option value="PCS">{{ tr('pcs') }}</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Assembler Name</label>
+                                        <label class="form-label">{{ tr('prod_assembler') }}</label>
                                         <input type="text" name="assembler_name" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn btn-warning">
-                                        <i class="fas fa-tools me-1"></i> Record Assembly
+                                        <i class="fas fa-tools me-1"></i> {{ tr('prod_record_assembly') }}
                                     </button>
                                 </form>
                             </div>
@@ -264,17 +270,17 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-warning"></i> Assembly History</h5>
+                                <h5><i class="fas fa-history me-2 text-warning"></i> {{ tr('prod_assembly_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date</th>
-                                                <th>Assembler</th>
-                                                <th>Quantity</th>
-                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('prod_assembler_col') }}</th>
+                                                <th>{{ tr('quantity') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -303,43 +309,46 @@
                 </div>
             </div>
 
-            <!-- Packing Panel -->
+            <!-- ============================================ -->
+            <!-- PACKING TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel" id="p-packing">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-plus-circle text-info me-2"></i> Packing (LOT)</h5>
+                                <h5><i class="fas fa-plus-circle text-info me-2"></i> {{ tr('prod_packing_title') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/packing_before_seal">
+                                    <input type="hidden" name="tab" value="packing">
                                     <div class="mb-3">
-                                        <label class="form-label">LOT Number</label>
+                                        <label class="form-label">{{ tr('prod_lot_number') }}</label>
                                         <input type="text" name="lot_number" class="form-control" placeholder="e.g. LOT001" required>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Quantity</label>
+                                                <label class="form-label">{{ tr('quantity') }}</label>
                                                 <input type="number" name="quantity" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Unit</label>
+                                                <label class="form-label">{{ tr('unit') }}</label>
                                                 <select name="unit" class="form-select">
-                                                    <option value="PCS">PCS</option>
+                                                    <option value="PCS">{{ tr('pcs') }}</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Packer Name</label>
+                                        <label class="form-label">{{ tr('prod_packer') }}</label>
                                         <input type="text" name="packer_name" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn btn-info">
-                                        <i class="fas fa-box me-1"></i> Record Packing
+                                        <i class="fas fa-box me-1"></i> {{ tr('prod_record_packing') }}
                                     </button>
                                 </form>
                             </div>
@@ -349,18 +358,18 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-info"></i> Packing History</h5>
+                                <h5><i class="fas fa-history me-2 text-info"></i> {{ tr('prod_packing_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date</th>
-                                                <th>LOT</th>
-                                                <th>Packer</th>
-                                                <th>Qty</th>
-                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('prod_lot_number') }}</th>
+                                                <th>{{ tr('prod_packer_col') }}</th>
+                                                <th>{{ tr('quantity') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -390,41 +399,44 @@
                 </div>
             </div>
 
-            <!-- Sealing Panel -->
+            <!-- ============================================ -->
+            <!-- SEALING TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel" id="p-sealing">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-plus-circle text-danger me-2"></i> Sealing</h5>
+                                <h5><i class="fas fa-plus-circle text-danger me-2"></i> {{ tr('prod_sealing') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/sealing">
+                                    <input type="hidden" name="tab" value="sealing">
                                     <div class="mb-3">
-                                        <label class="form-label">LOT Number</label>
+                                        <label class="form-label">{{ tr('prod_lot_number') }}</label>
                                         <input type="text" name="lot_number" class="form-control" required>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Sealing Quantity</label>
+                                                <label class="form-label">{{ tr('prod_sealing_qty') }}</label>
                                                 <input type="number" name="sealing_qty" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Packing Quantity</label>
+                                                <label class="form-label">{{ tr('prod_packing_qty') }}</label>
                                                 <input type="number" name="packing_qty" class="form-control" required>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Sealer Name</label>
+                                        <label class="form-label">{{ tr('prod_sealer') }}</label>
                                         <input type="text" name="sealer_name" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn btn-danger">
-                                        <i class="fas fa-lock me-1"></i> Record Sealing
+                                        <i class="fas fa-lock me-1"></i> {{ tr('prod_record_sealing') }}
                                     </button>
                                 </form>
                             </div>
@@ -434,18 +446,18 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-danger"></i> Sealing History</h5>
+                                <h5><i class="fas fa-history me-2 text-danger"></i> {{ tr('prod_sealing_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date</th>
-                                                <th>LOT</th>
-                                                <th>Sealer</th>
-                                                <th>Sealing Qty</th>
-                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('prod_lot_number') }}</th>
+                                                <th>{{ tr('prod_sealer_col') }}</th>
+                                                <th>{{ tr('prod_sealing_qty_col') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -475,41 +487,44 @@
                 </div>
             </div>
 
-            <!-- Sterilization Entry Panel -->
+            <!-- ============================================ -->
+            <!-- STERILIZATION ENTRY TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel" id="p-ster-entry">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-plus-circle text-purple me-2"></i> Sterilization Entry</h5>
+                                <h5><i class="fas fa-plus-circle text-purple me-2"></i> {{ tr('prod_ster_entry_title') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/sterilization_entry">
+                                    <input type="hidden" name="tab" value="sterilization_entry">
                                     <div class="mb-3">
-                                        <label class="form-label">LOT Number</label>
+                                        <label class="form-label">{{ tr('prod_lot_number') }}</label>
                                         <input type="text" name="lot_number" class="form-control" required>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Bag Quantity</label>
+                                                <label class="form-label">{{ tr('prod_bag_qty') }}</label>
                                                 <input type="number" name="bag_quantity" value="0" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">PCS Quantity</label>
+                                                <label class="form-label">{{ tr('prod_pcs_qty') }}</label>
                                                 <input type="number" name="pcs_quantity" value="0" class="form-control" required>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Person Name</label>
+                                        <label class="form-label">{{ tr('prod_person_name') }}</label>
                                         <input type="text" name="person_name" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn" style="background:#6f42c1; color:white;">
-                                        <i class="fas fa-vial me-1"></i> Record Entry
+                                        <i class="fas fa-vial me-1"></i> {{ tr('prod_record_entry') }}
                                     </button>
                                 </form>
                             </div>
@@ -519,19 +534,19 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-purple"></i> Sterilization Entry History</h5>
+                                <h5><i class="fas fa-history me-2 text-purple"></i> {{ tr('prod_ster_entry_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date</th>
-                                                <th>LOT</th>
-                                                <th>Bags</th>
-                                                <th>PCS</th>
-                                                <th>Person</th>
-                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('prod_lot_number') }}</th>
+                                                <th>{{ tr('prod_bag_qty') }}</th>
+                                                <th>{{ tr('prod_pcs_qty') }}</th>
+                                                <th>{{ tr('prod_person_name') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -562,41 +577,44 @@
                 </div>
             </div>
 
-            <!-- Sterilization Start Panel -->
+            <!-- ============================================ -->
+            <!-- STERILIZATION START TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel" id="p-ster-start">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-play-circle text-success me-2"></i> Sterilization Start</h5>
+                                <h5><i class="fas fa-play-circle text-success me-2"></i> {{ tr('prod_ster_start_title') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/sterilization_start">
+                                    <input type="hidden" name="tab" value="sterilization_start">
                                     <div class="mb-3">
-                                        <label class="form-label">LOT Number</label>
+                                        <label class="form-label">{{ tr('prod_lot_number') }}</label>
                                         <input type="text" name="lot_number" class="form-control" required>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Bag Quantity</label>
+                                                <label class="form-label">{{ tr('prod_bag_qty') }}</label>
                                                 <input type="number" name="bag_quantity" value="0" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">PCS Quantity</label>
+                                                <label class="form-label">{{ tr('prod_pcs_qty') }}</label>
                                                 <input type="number" name="pcs_quantity" value="0" class="form-control" required>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Operator Name</label>
+                                        <label class="form-label">{{ tr('prod_operator') }}</label>
                                         <input type="text" name="operator_name" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-play me-1"></i> Record Start
+                                        <i class="fas fa-play me-1"></i> {{ tr('prod_record_start') }}
                                     </button>
                                 </form>
                             </div>
@@ -606,18 +624,18 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-success"></i> Sterilization Start History</h5>
+                                <h5><i class="fas fa-history me-2 text-success"></i> {{ tr('prod_ster_start_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date/Time</th>
-                                                <th>LOT</th>
-                                                <th>Bags</th>
-                                                <th>PCS</th>
-                                                <th>Operator</th>
+                                                <th>{{ tr('prod_datetime') }}</th>
+                                                <th>{{ tr('prod_lot_number') }}</th>
+                                                <th>{{ tr('prod_bag_qty') }}</th>
+                                                <th>{{ tr('prod_pcs_qty') }}</th>
+                                                <th>{{ tr('prod_operator_col') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -639,41 +657,44 @@
                 </div>
             </div>
 
-            <!-- Sterilization Finish Panel -->
+            <!-- ============================================ -->
+            <!-- STERILIZATION FINISH TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel" id="p-ster-finish">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-stop-circle text-danger me-2"></i> Sterilization Finish</h5>
+                                <h5><i class="fas fa-stop-circle text-danger me-2"></i> {{ tr('prod_ster_finish_title') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/sterilization_finish">
+                                    <input type="hidden" name="tab" value="sterilization_finish">
                                     <div class="mb-3">
-                                        <label class="form-label">LOT Number</label>
+                                        <label class="form-label">{{ tr('prod_lot_number') }}</label>
                                         <input type="text" name="lot_number" class="form-control" required>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Bag Quantity</label>
+                                                <label class="form-label">{{ tr('prod_bag_qty') }}</label>
                                                 <input type="number" name="bag_quantity" value="0" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">PCS Quantity</label>
+                                                <label class="form-label">{{ tr('prod_pcs_qty') }}</label>
                                                 <input type="number" name="pcs_quantity" value="0" class="form-control" required>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Operator Name</label>
+                                        <label class="form-label">{{ tr('prod_operator') }}</label>
                                         <input type="text" name="operator_name" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn btn-danger">
-                                        <i class="fas fa-stop me-1"></i> Record Finish
+                                        <i class="fas fa-stop me-1"></i> {{ tr('prod_record_finish') }}
                                     </button>
                                 </form>
                             </div>
@@ -683,18 +704,18 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-danger"></i> Sterilization Finish History</h5>
+                                <h5><i class="fas fa-history me-2 text-danger"></i> {{ tr('prod_ster_finish_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date/Time</th>
-                                                <th>LOT</th>
-                                                <th>Bags</th>
-                                                <th>PCS</th>
-                                                <th>Operator</th>
+                                                <th>{{ tr('prod_datetime') }}</th>
+                                                <th>{{ tr('prod_lot_number') }}</th>
+                                                <th>{{ tr('prod_bag_qty') }}</th>
+                                                <th>{{ tr('prod_pcs_qty') }}</th>
+                                                <th>{{ tr('prod_operator_col') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -716,41 +737,44 @@
                 </div>
             </div>
 
-            <!-- Packing After Sterile Panel -->
+            <!-- ============================================ -->
+            <!-- PACKING AFTER STERILE TAB -->
+            <!-- ============================================ -->
             <div class="dept-panel" id="p-pack-after">
                 <div class="row g-4">
                     <div class="col-xl-5">
                         {% if not is_viewer %}
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-plus-circle text-info me-2"></i> Packing After Sterile</h5>
+                                <h5><i class="fas fa-plus-circle text-info me-2"></i> {{ tr('prod_pack_after') }}</h5>
                             </div>
                             <div class="card-body-modern">
                                 <form method="post" action="/production/packing_after_sterile">
+                                    <input type="hidden" name="tab" value="packing_after_sterile">
                                     <div class="mb-3">
-                                        <label class="form-label">LOT Number</label>
+                                        <label class="form-label">{{ tr('prod_lot_number') }}</label>
                                         <input type="text" name="lot_number" class="form-control" required>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Bag Quantity</label>
+                                                <label class="form-label">{{ tr('prod_bag_qty') }}</label>
                                                 <input type="number" name="bag_quantity" value="0" class="form-control" required>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">PCS Quantity</label>
+                                                <label class="form-label">{{ tr('prod_pcs_qty') }}</label>
                                                 <input type="number" name="pcs_quantity" value="0" class="form-control" required>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Packer Name</label>
+                                        <label class="form-label">{{ tr('prod_packer') }}</label>
                                         <input type="text" name="packer_name" class="form-control" required>
                                     </div>
                                     <button type="submit" class="btn btn-info">
-                                        <i class="fas fa-box-open me-1"></i> Record Packing
+                                        <i class="fas fa-box-open me-1"></i> {{ tr('prod_record_packing') }}
                                     </button>
                                 </form>
                             </div>
@@ -760,19 +784,19 @@
                     <div class="col-xl-7">
                         <div class="card card-modern">
                             <div class="card-header-modern">
-                                <h5><i class="fas fa-history me-2 text-info"></i> Packing After Sterile History</h5>
+                                <h5><i class="fas fa-history me-2 text-info"></i> {{ tr('prod_pack_after_history') }}</h5>
                             </div>
                             <div class="card-body-modern p-0">
                                 <div class="table-responsive">
                                     <table class="table table-modern">
                                         <thead>
                                             <tr>
-                                                <th>Date</th>
-                                                <th>LOT</th>
-                                                <th>Bags</th>
-                                                <th>PCS</th>
-                                                <th>Packer</th>
-                                                {% if not is_viewer %}<th>Action</th>{% endif %}
+                                                <th>{{ tr('date') }}</th>
+                                                <th>{{ tr('prod_lot_number') }}</th>
+                                                <th>{{ tr('prod_bag_qty') }}</th>
+                                                <th>{{ tr('prod_pcs_qty') }}</th>
+                                                <th>{{ tr('prod_packer_col') }}</th>
+                                                {% if not is_viewer %}<th>{{ tr('action') }}</th>{% endif %}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -813,19 +837,68 @@
 
 <script>
 (function() {
+    // Get current tab from URL or localStorage
+    var currentTab = localStorage.getItem('production_tab') || 'p-transfer';
+    
+    // Find and activate the correct tab
     var sidebar = document.getElementById('prod-sidebar');
     if (!sidebar) sidebar = document.querySelector('.dept-sidebar-topbar');
     if (!sidebar) return;
+    
     var buttons = sidebar.querySelectorAll('button');
     var panels = document.querySelectorAll('.dept-panel');
+    
+    // Function to switch tab
+    function switchTab(tabId) {
+        buttons.forEach(function(b) { 
+            b.classList.remove('active'); 
+        });
+        panels.forEach(function(p) { 
+            p.classList.remove('active'); 
+        });
+        
+        var targetButton = sidebar.querySelector('button[data-target="' + tabId + '"]');
+        if (targetButton) {
+            targetButton.classList.add('active');
+        }
+        var targetPanel = document.getElementById(tabId);
+        if (targetPanel) {
+            targetPanel.classList.add('active');
+        }
+        localStorage.setItem('production_tab', tabId);
+    }
+    
+    // Add click handlers
     buttons.forEach(function(btn) {
         btn.addEventListener('click', function() {
-            buttons.forEach(function(b) { b.classList.remove('active'); });
-            panels.forEach(function(p) { p.classList.remove('active'); });
-            btn.classList.add('active');
-            document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+            var target = this.getAttribute('data-target');
+            switchTab(target);
         });
     });
+    
+    // Check for tab parameter in URL
+    var urlParams = new URLSearchParams(window.location.search);
+    var tabParam = urlParams.get('tab');
+    if (tabParam) {
+        var tabMap = {
+            'checking': 'p-checking',
+            'assembly': 'p-assembly',
+            'packing': 'p-packing',
+            'sealing': 'p-sealing',
+            'sterilization_entry': 'p-ster-entry',
+            'sterilization_start': 'p-ster-start',
+            'sterilization_finish': 'p-ster-finish',
+            'packing_after_sterile': 'p-pack-after'
+        };
+        var mappedTab = tabMap[tabParam];
+        if (mappedTab) {
+            switchTab(mappedTab);
+        } else {
+            switchTab(currentTab);
+        }
+    } else {
+        switchTab(currentTab);
+    }
 })();
 </script>
 

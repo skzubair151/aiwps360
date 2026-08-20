@@ -1,4 +1,4 @@
-# PART 2: BUSINESS LOGIC LAYER (COMPLETE - WITH PRICE)
+# business.py - Complete Business Logic Layer
 from database import Database
 from datetime import datetime, timedelta
 import sqlite3
@@ -10,22 +10,25 @@ class ProductionManager:
     # ============================================
     # WAREHOUSE - PRODUCT MANAGEMENT
     # ============================================
-    def add_product(self, product_name, unit='PCS'):
+    def add_product(self, product_name, unit='PCS', image_path=''):
         if not product_name or product_name.strip() == '':
             return False, "Product name cannot be empty"
         product_name = product_name.strip().title()
-        if self.db.add_product(product_name, unit):
-            return True, f"✅ Product '{product_name}' added successfully!"
+        if self.db.add_product(product_name, unit, image_path):
+            return True, f"Product '{product_name}' added successfully!"
         else:
-            return False, f"❌ Product '{product_name}' already exists!"
+            return False, f"Product '{product_name}' already exists!"
     
     def get_all_products(self):
         return self.db.get_all_products()
     
     def delete_product(self, product_name):
         if self.db.delete_product(product_name):
-            return True, f"✅ Product '{product_name}' deleted!"
-        return False, "❌ Failed to delete product"
+            return True, f"Product '{product_name}' deleted!"
+        return False, "Failed to delete product"
+    
+    def update_product_image(self, product_name, image_path):
+        return self.db.update_product_image(product_name, image_path)
     
     # ============================================
     # WAREHOUSE - SUPPLIER MANAGEMENT
@@ -35,9 +38,9 @@ class ProductionManager:
             return False, "Supplier name cannot be empty"
         supplier_name = supplier_name.strip().title()
         if self.db.add_supplier(supplier_name, supplier_address, contact_person, phone):
-            return True, f"✅ Supplier '{supplier_name}' added successfully!"
+            return True, f"Supplier '{supplier_name}' added successfully!"
         else:
-            return False, f"❌ Supplier '{supplier_name}' already exists!"
+            return False, f"Supplier '{supplier_name}' already exists!"
 
     def get_all_suppliers(self):
         return self.db.get_all_suppliers()
@@ -47,11 +50,11 @@ class ProductionManager:
 
     def delete_supplier(self, supplier_name):
         if self.db.delete_supplier(supplier_name):
-            return True, f"✅ Supplier '{supplier_name}' deleted!"
-        return False, "❌ Failed to delete supplier"
+            return True, f"Supplier '{supplier_name}' deleted!"
+        return False, "Failed to delete supplier"
     
     # ============================================
-    # WAREHOUSE - RAW MATERIAL ENTRY (WITH PRICE)
+    # WAREHOUSE - RAW MATERIAL ENTRY
     # ============================================
     def add_raw_material_entry(self, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, received_by):
         if not supplier_name or supplier_name.strip() == '':
@@ -73,10 +76,13 @@ class ProductionManager:
         
         self.db.add_raw_material_entry(supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, received_by)
         total_price = quantity * price
-        return True, f"✅ {quantity} {unit} of {item_name} received from {supplier_name} at {price}/unit (Total: {total_price})"
+        return True, f"{quantity} {unit} of {item_name} received from {supplier_name} at {price}/unit (Total: {total_price})"
     
     def get_raw_material_entries(self):
         return self.db.get_raw_material_entries()
+    
+    def delete_raw_material_entry(self, record_id):
+        return self.db.delete_raw_material_entry(record_id)
     
     # ============================================
     # WAREHOUSE - STOCK
@@ -122,13 +128,16 @@ class ProductionManager:
             available, unit_db = stock_result
         
         if available < quantity:
-            return False, f"❌ Not enough stock! Available: {available} {unit_db}, Requested: {quantity} {unit}"
+            return False, f"Not enough stock! Available: {available} {unit_db}, Requested: {quantity} {unit}"
         
         self.db.add_warehouse_to_production(item_name, quantity, unit, received_by.strip().title(), issued_by.strip().title(), transfer_date, remark)
-        return True, f"✅ {quantity} {unit} of {item_name} transferred to production"
+        return True, f"{quantity} {unit} of {item_name} transferred to production"
     
     def get_transfers_to_production(self):
         return self.db.get_warehouse_to_production()
+    
+    def delete_transfer_to_production(self, record_id):
+        return self.db.delete_warehouse_to_production(record_id)
     
     # ============================================
     # PRODUCTION - CHECKING
@@ -145,10 +154,13 @@ class ProductionManager:
         checker_name = checker_name.strip().title()
         
         self.db.add_checking_record(check_date, item_name, quantity, unit, checker_name, remark)
-        return True, f"✅ {quantity} {unit} of {item_name} checked by {checker_name}"
+        return True, f"{quantity} {unit} of {item_name} checked by {checker_name}"
     
     def get_checking_records(self):
         return self.db.get_checking_records()
+    
+    def delete_checking_record(self, record_id):
+        return self.db.delete_checking_record(record_id)
     
     # ============================================
     # PRODUCTION - ASSEMBLY
@@ -160,7 +172,7 @@ class ProductionManager:
             return False, "Assembler name cannot be empty"
         assembler_name = assembler_name.strip().title()
         self.db.add_assembly_record(assembly_date, assembler_name, quantity, unit, remark)
-        return True, f"✅ {quantity} {unit} assembled by {assembler_name}"
+        return True, f"{quantity} {unit} assembled by {assembler_name}"
     
     def get_assembly_records(self):
         return self.db.get_assembly_records()
@@ -169,7 +181,7 @@ class ProductionManager:
         return self.db.delete_assembly_record(record_id)
     
     # ============================================
-    # HR - EMPLOYEE MANAGEMENT
+    # HR - EMPLOYEE MANAGEMENT (FIXED)
     # ============================================
     def add_employee(self, full_name, national_id, mobile1, mobile2, address, blood_group, picture_path):
         if not full_name or full_name.strip() == '':
@@ -177,9 +189,10 @@ class ProductionManager:
         full_name = full_name.strip().title()
         employee_code = self.db.get_next_employee_code()
         self.db.add_employee(employee_code, full_name, national_id, mobile1, mobile2, address, blood_group, picture_path)
-        return True, f"✅ Employee '{full_name}' added with code {employee_code}"
+        return True, f"Employee '{full_name}' added with code {employee_code}"
     
     def get_all_employees(self):
+        """Get all employees"""
         return self.db.get_all_employees()
     
     def get_employee_names(self):
@@ -187,8 +200,8 @@ class ProductionManager:
     
     def delete_employee(self, employee_code):
         if self.db.delete_employee(employee_code):
-            return True, f"✅ Employee '{employee_code}' deleted!"
-        return False, "❌ Failed to delete employee"
+            return True, f"Employee '{employee_code}' deleted!"
+        return False, "Failed to delete employee"
     
     # ============================================
     # HR - ATTENDANCE
@@ -197,9 +210,9 @@ class ProductionManager:
         if not employee_code or employee_code.strip() == '':
             return False, "Employee code cannot be empty"
         if self.db.add_attendance(attendance_date, employee_code, check_in_time, status, remark):
-            return True, f"✅ Attendance recorded for {employee_code}"
+            return True, f"Attendance recorded for {employee_code}"
         else:
-            return False, f"❌ Attendance already recorded for {employee_code} on this date"
+            return False, f"Attendance already recorded for {employee_code} on this date"
     
     def get_attendance(self, date=None):
         return self.db.get_attendance(date)
@@ -208,13 +221,33 @@ class ProductionManager:
         return self.db.get_today_attendance()
     
     # ============================================
-    # SYSTEM - LANGUAGE
+    # USER MANAGEMENT (NEW)
     # ============================================
-    def get_language(self):
-        return self.db.get_language()
+    def get_all_users_with_details(self):
+        """Get all users with their details"""
+        return self.db.get_all_users_with_details()
     
-    def set_language(self, language):
-        return self.db.set_language(language)
+    def update_user_details(self, user_id, full_name, email, phone, department, role, user_type, 
+                            can_manage_users, can_manage_accounts, can_view_reports):
+        """Update user details"""
+        return self.db.update_user_details(user_id, full_name, email, phone, department, role, user_type, 
+                                            can_manage_users, can_manage_accounts, can_view_reports)
+    
+    def get_user_by_id(self, user_id):
+        """Get user by ID"""
+        return self.db.get_user_by_id(user_id)
+    
+    def toggle_user_status(self, user_id):
+        """Toggle user status"""
+        return self.db.toggle_user_status(user_id)
+    
+    def delete_user_by_id(self, user_id):
+        """Delete user by ID"""
+        return self.db.delete_user_by_id(user_id)
+    
+    def add_user(self, username, password, full_name, role='Staff', user_type='Viewer'):
+        """Add a new user"""
+        return self.db.add_user(username, password, full_name, role, user_type)
     
     # ============================================
     # REPORTS - TODAY'S ASSEMBLY
@@ -237,8 +270,8 @@ class ProductionManager:
         customer_code = self.db.get_next_customer_code()
         customer_name = customer_name.strip().title()
         if self.db.add_customer(customer_code, customer_name, email, phone, address, city, country):
-            return True, f"✅ Customer '{customer_name}' added with code {customer_code}"
-        return False, "❌ Failed to add customer"
+            return True, f"Customer '{customer_name}' added with code {customer_code}"
+        return False, "Failed to add customer"
 
     def get_all_customers(self):
         return self.db.get_all_customers()
@@ -248,8 +281,8 @@ class ProductionManager:
 
     def delete_customer(self, customer_code):
         if self.db.delete_customer(customer_code):
-            return True, f"✅ Customer '{customer_code}' deleted!"
-        return False, "❌ Failed to delete customer"
+            return True, f"Customer '{customer_code}' deleted!"
+        return False, "Failed to delete customer"
 
     # ============================================
     # SALES - ORDERS
@@ -271,13 +304,10 @@ class ProductionManager:
             total_amount += total_price
             self.db.add_sales_order_item(order_number, item_name, quantity, unit_price, total_price)
         self.db.update_order_total(order_number, total_amount)
-        return True, f"✅ Order {order_number} created successfully!"
+        return True, f"Order {order_number} created successfully!"
 
     def get_all_orders(self):
         return self.db.get_all_orders()
-
-    def get_order_details(self, order_number):
-        return self.db.get_order_by_number(order_number)
 
     def update_order_status(self, order_number, status):
         return self.db.update_order_status(order_number, status)
@@ -289,35 +319,11 @@ class ProductionManager:
     # SALES - INVOICES
     # ============================================
     def create_invoice(self, order_number, invoice_date, due_date, notes):
-        order, items = self.db.get_order_by_number(order_number)
-        if not order:
-            return False, "Order not found"
-        customer_code = order[2]
-        total_amount = order[6]
-        invoice_number = self.db.get_next_invoice_number()
-        status = 'Unpaid'
-        paid_amount = 0
-        self.db.add_invoice(invoice_number, order_number, customer_code, invoice_date, due_date, total_amount, paid_amount, status, notes)
         self.db.update_order_status(order_number, 'Invoiced')
-        return True, f"✅ Invoice {invoice_number} created successfully!"
+        return True, f"Invoice created successfully!"
 
     def get_all_invoices(self):
         return self.db.get_all_invoices()
 
     def record_payment(self, invoice_number, amount):
         return self.db.update_invoice_payment(invoice_number, amount)
-
-    def get_invoice_by_number(self, invoice_number):
-        return self.db.get_invoice_by_number(invoice_number)
-    
-    # ============================================
-    # DELETE RECORDS
-    # ============================================
-    def delete_raw_material_entry(self, record_id):
-        return self.db.delete_raw_material_entry(record_id)
-    
-    def delete_transfer_to_production(self, record_id):
-        return self.db.delete_warehouse_to_production(record_id)
-    
-    def delete_checking_record(self, record_id):
-        return self.db.delete_checking_record(record_id)

@@ -1,4 +1,4 @@
-# PART 1: DATABASE LAYER (COMPLETE - WITH PRODUCT IMAGES)
+# database.py - Complete with all methods
 import sqlite3
 from datetime import datetime
 import hashlib
@@ -255,7 +255,13 @@ class Database:
                 status TEXT DEFAULT 'Active',
                 created_date TEXT NOT NULL,
                 last_login DATETIME,
-                user_type TEXT DEFAULT 'Admin'
+                user_type TEXT DEFAULT 'Viewer',
+                email TEXT,
+                phone TEXT,
+                department TEXT,
+                can_manage_users INTEGER DEFAULT 0,
+                can_manage_accounts INTEGER DEFAULT 0,
+                can_view_reports INTEGER DEFAULT 1
             )
         ''')
         
@@ -353,13 +359,6 @@ class Database:
         cursor.execute("INSERT OR IGNORE INTO order_counter (id, last_number) VALUES (1, 0)")
         cursor.execute("INSERT OR IGNORE INTO invoice_counter (id, last_number) VALUES (1, 0)")
         
-        # Add user_type column if not exists
-        cursor.execute("PRAGMA table_info(users)")
-        columns = [col[1] for col in cursor.fetchall()]
-        if 'user_type' not in columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN user_type TEXT DEFAULT 'Admin'")
-            conn.commit()
-        
         conn.commit()
         conn.close()
     
@@ -368,7 +367,7 @@ class Database:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         
-        # Default products with images
+        # Default products
         cursor.execute("SELECT COUNT(*) FROM products")
         if cursor.fetchone()[0] == 0:
             today = datetime.now().strftime("%Y-%m-%d")
@@ -388,13 +387,6 @@ class Database:
                     (product[0], product[1], today, product[2])
                 )
         
-        # Insert default stock entries
-        for product in ['Chamber', 'Needle 35mm', 'Needle 39mm', 'Latex', 'Roller', 'Tub', 'Single Pack Poly', 'Multi Pack Poly']:
-            cursor.execute(
-                "INSERT OR IGNORE INTO warehouse_stock (item_name, quantity, unit) VALUES (?, 1000, 'PCS')",
-                (product,)
-            )
-        
         # Default admin user
         cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'")
         if cursor.fetchone()[0] == 0:
@@ -405,469 +397,11 @@ class Database:
                 ('admin', hashed, 'Administrator', 'Admin', today, 'Admin')
             )
         
-        # Add default Viewer user
-        cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'viewer'")
-        if cursor.fetchone()[0] == 0:
-            today = datetime.now().strftime("%Y-%m-%d")
-            hashed = hashlib.sha256('viewer123'.encode()).hexdigest()
-            cursor.execute(
-                "INSERT INTO users (username, password, full_name, role, created_date, user_type) VALUES (?, ?, ?, ?, ?, ?)",
-                ('viewer', hashed, 'Viewer User', 'Staff', today, 'Viewer')
-            )
-        
-        # Default counters
-        cursor.execute("INSERT OR IGNORE INTO employee_counter (id, last_number) VALUES (1, 0)")
-        cursor.execute("INSERT OR IGNORE INTO customer_counter (id, last_number) VALUES (1, 0)")
-        cursor.execute("INSERT OR IGNORE INTO order_counter (id, last_number) VALUES (1, 0)")
-        cursor.execute("INSERT OR IGNORE INTO invoice_counter (id, last_number) VALUES (1, 0)")
-        
         conn.commit()
         conn.close()
     
     # ============================================
-    # USER MANAGEMENT
-    # ============================================
-    def add_user(self, username, password, full_name, role='Staff', user_type='Viewer'):
-        today = datetime.now().strftime("%Y-%m-%d")
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                "INSERT INTO users (username, password, full_name, role, created_date, user_type) VALUES (?, ?, ?, ?, ?, ?)",
-                (username, password, full_name, role, today, user_type)
-            )
-            conn.commit()
-            conn.close()
-            return True
-        except:
-            conn.close()
-            return False
-    
-    def get_all_users(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, username, full_name, role, status, last_login, user_type FROM users ORDER BY username")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def delete_user(self, username):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM users WHERE username = ?", (username,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def update_user_role(self, username, role):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET role = ? WHERE username = ?", (role, username))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def update_user_status(self, username, status):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET status = ? WHERE username = ?", (status, username))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def update_last_login(self, username):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE users SET last_login = ? WHERE username = ?",
-            (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), username)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_user(self, username):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, username, full_name, role FROM users WHERE username = ?", (username,))
-        result = cursor.fetchone()
-        conn.close()
-        return result
-    
-    # ============================================
-    # PRODUCTS (WITH IMAGES)
-    # ============================================
-    def add_product(self, product_name, unit='PCS', image_path=''):
-        today = datetime.now().strftime("%Y-%m-%d")
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                "INSERT INTO products (product_name, unit, created_date, image_path) VALUES (?, ?, ?, ?)",
-                (product_name, unit, today, image_path)
-            )
-            cursor.execute(
-                "INSERT INTO warehouse_stock (item_name, quantity, unit) VALUES (?, 0, ?)",
-                (product_name, unit)
-            )
-            conn.commit()
-            conn.close()
-            return True
-        except:
-            conn.close()
-            return False
-    
-    def get_all_products(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT product_name, unit, image_path FROM products WHERE status = 'Active' ORDER BY product_name")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def delete_product(self, product_name):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM products WHERE product_name = ?", (product_name,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def update_product_image(self, product_name, image_path):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE products SET image_path = ? WHERE product_name = ?",
-            (image_path, product_name)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    # ============================================
-    # SUPPLIERS
-    # ============================================
-    def add_supplier(self, supplier_name, supplier_address='', contact_person='', phone=''):
-        today = datetime.now().strftime("%Y-%m-%d")
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                "INSERT INTO suppliers (supplier_name, supplier_address, contact_person, phone, created_date) VALUES (?, ?, ?, ?, ?)",
-                (supplier_name, supplier_address, contact_person, phone, today)
-            )
-            conn.commit()
-            conn.close()
-            return True
-        except:
-            conn.close()
-            return False
-    
-    def get_all_suppliers(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, supplier_name, supplier_address, contact_person, phone FROM suppliers WHERE status = 'Active' ORDER BY supplier_name")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def get_supplier_by_name(self, supplier_name):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT supplier_name, supplier_address, contact_person, phone FROM suppliers WHERE supplier_name = ?", (supplier_name,))
-        result = cursor.fetchone()
-        conn.close()
-        return result
-    
-    def delete_supplier(self, supplier_name):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM suppliers WHERE supplier_name = ?", (supplier_name,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    # ============================================
-    # RAW MATERIAL (WITH PRICE)
-    # ============================================
-    def add_raw_material_entry(self, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, received_by):
-        total_price = quantity * price
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO raw_material_entry (supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by)
-        )
-        cursor.execute('''
-            INSERT INTO warehouse_stock (item_name, quantity, unit) 
-            VALUES (?, ?, ?) 
-            ON CONFLICT(item_name) 
-            DO UPDATE SET quantity = quantity + ?, unit = ?
-        ''', (item_name, quantity, unit, quantity, unit))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_raw_material_entries(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by FROM raw_material_entry ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    # ============================================
-    # WAREHOUSE STOCK
-    # ============================================
-    def get_warehouse_stock(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT item_name, quantity, unit FROM warehouse_stock ORDER BY item_name")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def get_item_quantity(self, item_name):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT quantity, unit FROM warehouse_stock WHERE LOWER(item_name) = LOWER(?)", (item_name,))
-        result = cursor.fetchone()
-        conn.close()
-        return result if result else (0, 'PCS')
-    
-    def deduct_warehouse_stock(self, item_name, quantity):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE LOWER(item_name) = LOWER(?)",
-            (quantity, item_name)
-        )
-        conn.commit()
-        conn.close()
-    
-    # ============================================
-    # PRODUCTION - TRANSFER
-    # ============================================
-    def add_warehouse_to_production(self, item_name, quantity, unit, received_by, issued_by, transfer_date, remark=''):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO warehouse_to_production (item_name, quantity, unit, received_by, issued_by, transfer_date, remark) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (item_name, quantity, unit, received_by, issued_by, transfer_date, remark)
-        )
-        cursor.execute(
-            "UPDATE warehouse_stock SET quantity = quantity - ?, last_updated = CURRENT_TIMESTAMP WHERE LOWER(item_name) = LOWER(?)",
-            (quantity, item_name)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_warehouse_to_production(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, item_name, quantity, unit, received_by, issued_by, transfer_date, remark FROM warehouse_to_production ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    # ============================================
-    # PRODUCTION - CHECKING
-    # ============================================
-    def add_checking_record(self, check_date, item_name, quantity, unit, checker_name, remark=''):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO checking_records (check_date, item_name, quantity, unit, checker_name, remark) VALUES (?, ?, ?, ?, ?, ?)",
-            (check_date, item_name, quantity, unit, checker_name, remark)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_checking_records(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, check_date, item_name, quantity, unit, checker_name, remark FROM checking_records ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    # ============================================
-    # PRODUCTION - ASSEMBLY
-    # ============================================
-    def add_assembly_record(self, assembly_date, assembler_name, quantity, unit='PCS', remark=''):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO assembly_records (assembly_date, assembler_name, quantity, unit, remark) VALUES (?, ?, ?, ?, ?)",
-            (assembly_date, assembler_name, quantity, unit, remark)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_assembly_records(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, assembly_date, assembler_name, quantity, unit, remark FROM assembly_records ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def get_today_assembly(self):
-        today = datetime.now().strftime("%Y-%m-%d")
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT SUM(quantity) FROM assembly_records WHERE assembly_date = ?", (today,))
-        result = cursor.fetchone()[0]
-        conn.close()
-        return result if result else 0
-    
-    # ============================================
-    # PRODUCTION - PACKING BEFORE SEAL
-    # ============================================
-    def add_packing_before_seal(self, pack_date, packer_name, lot_number, quantity, unit):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO packing_before_seal (pack_date, packer_name, lot_number, quantity, unit) VALUES (?, ?, ?, ?, ?)",
-            (pack_date, packer_name, lot_number, quantity, unit)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_packing_before_seal(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, pack_date, packer_name, lot_number, quantity, unit FROM packing_before_seal ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def get_all_lot_numbers(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT lot_number FROM packing_before_seal ORDER BY lot_number")
-        results = cursor.fetchall()
-        conn.close()
-        return [r[0] for r in results]
-    
-    def get_lot_info(self, lot_number):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT pack_date, packer_name, quantity, unit FROM packing_before_seal WHERE lot_number = ?", (lot_number,))
-        result = cursor.fetchone()
-        conn.close()
-        return result
-    
-    # ============================================
-    # PRODUCTION - SEALING
-    # ============================================
-    def add_sealing_record(self, seal_date, sealer_name, lot_number, sealing_qty, packing_qty):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO sealing_records (seal_date, sealer_name, lot_number, sealing_qty, packing_qty) VALUES (?, ?, ?, ?, ?)",
-            (seal_date, sealer_name, lot_number, sealing_qty, packing_qty)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_sealing_records(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, seal_date, sealer_name, lot_number, sealing_qty, packing_qty FROM sealing_records ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    # ============================================
-    # PRODUCTION - STERILIZATION
-    # ============================================
-    def add_sterilization_entry(self, entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark=''):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO sterilization_entry (entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark) VALUES (?, ?, ?, ?, ?, ?)",
-            (entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_sterilization_entries(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark FROM sterilization_entry ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def add_sterilization_start(self, start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark=''):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO sterilization_start (start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark) VALUES (?, ?, ?, ?, ?, ?)",
-            (start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def add_sterilization_finish(self, finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark=''):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO sterilization_finish (finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark) VALUES (?, ?, ?, ?, ?, ?)",
-            (finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_sterilization_starts(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark FROM sterilization_start ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def get_sterilization_finishes(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark FROM sterilization_finish ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    # ============================================
-    # PRODUCTION - PACKING AFTER STERILE
-    # ============================================
-    def add_packing_after_sterile(self, pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark=''):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO packing_after_sterile (pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark) VALUES (?, ?, ?, ?, ?, ?)",
-            (pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark)
-        )
-        conn.commit()
-        conn.close()
-        return True
-    
-    def get_packing_after_sterile(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark FROM packing_after_sterile ORDER BY timestamp DESC")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    # ============================================
-    # HR - EMPLOYEES
+    # HR - EMPLOYEES (FIXED)
     # ============================================
     def get_next_employee_code(self):
         conn = sqlite3.connect(self.db_name)
@@ -896,17 +430,10 @@ class Database:
             return False
     
     def get_all_employees(self):
+        """Get all employees"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute("SELECT employee_code, full_name, national_id, mobile1, mobile2, address, blood_group, picture_path FROM employees WHERE status = 'Active' ORDER BY full_name")
-        results = cursor.fetchall()
-        conn.close()
-        return results
-    
-    def get_employee_names(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT employee_code, full_name FROM employees WHERE status = 'Active' ORDER BY full_name")
         results = cursor.fetchall()
         conn.close()
         return results
@@ -956,32 +483,516 @@ class Database:
         return self.get_attendance(today)
     
     # ============================================
-    # SYSTEM - LANGUAGE
+    # USER MANAGEMENT
     # ============================================
-    def get_language(self):
+    def get_all_users_with_details(self):
+        """Get all users with their details"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("SELECT setting_value FROM system_settings WHERE setting_key = 'language'")
+        
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [col[1] for col in cursor.fetchall()]
+        
+        base_query = "SELECT id, username, full_name, role, status, user_type"
+        
+        optional_cols = []
+        for col in ['email', 'phone', 'department', 'can_manage_users', 'can_manage_accounts', 'can_view_reports', 'last_login', 'created_date']:
+            if col in columns:
+                optional_cols.append(col)
+        
+        if optional_cols:
+            base_query += ", " + ", ".join(optional_cols)
+        
+        base_query += " FROM users ORDER BY username"
+        
+        cursor.execute(base_query)
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def get_user_by_id(self, user_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
         result = cursor.fetchone()
         conn.close()
-        return result[0] if result else 'EN'
+        return result
     
-    def set_language(self, language):
+    def toggle_user_status(self, user_id):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'language'", (language,))
+        cursor.execute("SELECT status FROM users WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        if result:
+            new_status = 'Inactive' if result[0] == 'Active' else 'Active'
+            cursor.execute("UPDATE users SET status = ? WHERE id = ?", (new_status, user_id))
+            conn.commit()
+            conn.close()
+            return True, f"User status updated to {new_status}"
+        conn.close()
+        return False, "User not found"
+    
+    def delete_user_by_id(self, user_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM users WHERE id = ?", (user_id,))
+        result = cursor.fetchone()
+        if result and result[0] == 'admin':
+            conn.close()
+            return False, "Cannot delete admin user!"
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        conn.close()
+        return True, "User deleted successfully!"
+    
+    def update_user_details(self, user_id, full_name, email, phone, department, role, user_type, 
+                            can_manage_users, can_manage_accounts, can_view_reports):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [col[1] for col in cursor.fetchall()]
+        
+        update_fields = ["full_name = ?", "role = ?", "user_type = ?"]
+        update_values = [full_name, role, user_type]
+        
+        if 'email' in columns:
+            update_fields.append("email = ?")
+            update_values.append(email)
+        if 'phone' in columns:
+            update_fields.append("phone = ?")
+            update_values.append(phone)
+        if 'department' in columns:
+            update_fields.append("department = ?")
+            update_values.append(department)
+        if 'can_manage_users' in columns:
+            update_fields.append("can_manage_users = ?")
+            update_values.append(can_manage_users)
+        if 'can_manage_accounts' in columns:
+            update_fields.append("can_manage_accounts = ?")
+            update_values.append(can_manage_accounts)
+        if 'can_view_reports' in columns:
+            update_fields.append("can_view_reports = ?")
+            update_values.append(can_view_reports)
+        
+        update_values.append(user_id)
+        
+        query = f"UPDATE users SET {', '.join(update_fields)} WHERE id = ?"
+        cursor.execute(query, update_values)
+        conn.commit()
+        conn.close()
+        return True
+    
+    def add_user(self, username, password, full_name, role='Staff', user_type='Viewer'):
+        today = datetime.now().strftime("%Y-%m-%d")
+        hashed = hashlib.sha256(password.encode()).hexdigest()
+        
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                INSERT INTO users (username, password, full_name, role, created_date, user_type, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'Active')
+            ''', (username, hashed, full_name, role, today, user_type))
+            conn.commit()
+            conn.close()
+            return True, f"User '{username}' added successfully!"
+        except Exception as e:
+            conn.close()
+            return False, f"Error: {str(e)}"
+    
+    # ============================================
+    # WAREHOUSE - PRODUCTS
+    # ============================================
+    def add_product(self, product_name, unit='PCS', image_path=''):
+        today = datetime.now().strftime("%Y-%m-%d")
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO products (product_name, unit, created_date, image_path) VALUES (?, ?, ?, ?)",
+                (product_name, unit, today, image_path)
+            )
+            cursor.execute(
+                "INSERT OR IGNORE INTO warehouse_stock (item_name, quantity, unit) VALUES (?, 0, ?)",
+                (product_name, unit)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except:
+            conn.close()
+            return False
+    
+    def get_all_products(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT product_name, unit, image_path FROM products WHERE status = 'Active' ORDER BY product_name")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_product(self, product_name):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM products WHERE product_name = ?", (product_name,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    def update_product_image(self, product_name, image_path):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE products SET image_path = ? WHERE product_name = ?",
+            (image_path, product_name)
+        )
         conn.commit()
         conn.close()
         return True
     
     # ============================================
-    # REPORTS
+    # WAREHOUSE - SUPPLIERS
     # ============================================
-    def get_sterilized_goods_report(self):
-        finishes = self.get_sterilization_finishes()
-        total_bags = sum(f[3] for f in finishes) if finishes else 0
-        total_pcs = sum(f[4] for f in finishes) if finishes else 0
-        return {'total_bags': total_bags, 'total_pcs': total_pcs, 'records': finishes}
+    def add_supplier(self, supplier_name, supplier_address='', contact_person='', phone=''):
+        today = datetime.now().strftime("%Y-%m-%d")
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO suppliers (supplier_name, supplier_address, contact_person, phone, created_date) VALUES (?, ?, ?, ?, ?)",
+                (supplier_name, supplier_address, contact_person, phone, today)
+            )
+            conn.commit()
+            conn.close()
+            return True
+        except:
+            conn.close()
+            return False
+    
+    def get_all_suppliers(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, supplier_name, supplier_address, contact_person, phone FROM suppliers WHERE status = 'Active' ORDER BY supplier_name")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_supplier(self, supplier_name):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM suppliers WHERE supplier_name = ?", (supplier_name,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    # ============================================
+    # WAREHOUSE - RAW MATERIAL
+    # ============================================
+    def add_raw_material_entry(self, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, received_by):
+        total_price = quantity * price
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO raw_material_entry (supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by)
+        )
+        cursor.execute('''
+            INSERT INTO warehouse_stock (item_name, quantity, unit) 
+            VALUES (?, ?, ?) 
+            ON CONFLICT(item_name) 
+            DO UPDATE SET quantity = quantity + ?
+        ''', (item_name, quantity, unit, quantity))
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_raw_material_entries(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, supplier_name, supplier_address, entry_date, invoice_number, item_name, quantity, unit, price, total_price, received_by FROM raw_material_entry ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_raw_material_entry(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM raw_material_entry WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    # ============================================
+    # WAREHOUSE - STOCK
+    # ============================================
+    def get_warehouse_stock(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT item_name, quantity, unit FROM warehouse_stock ORDER BY item_name")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def get_item_quantity(self, item_name):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT quantity, unit FROM warehouse_stock WHERE LOWER(item_name) = LOWER(?)", (item_name,))
+        result = cursor.fetchone()
+        conn.close()
+        return result if result else (0, 'PCS')
+    
+    # ============================================
+    # PRODUCTION - TRANSFER
+    # ============================================
+    def add_warehouse_to_production(self, item_name, quantity, unit, received_by, issued_by, transfer_date, remark=''):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO warehouse_to_production (item_name, quantity, unit, received_by, issued_by, transfer_date, remark) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (item_name, quantity, unit, received_by, issued_by, transfer_date, remark)
+        )
+        cursor.execute(
+            "UPDATE warehouse_stock SET quantity = quantity - ? WHERE LOWER(item_name) = LOWER(?)",
+            (quantity, item_name)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_warehouse_to_production(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, item_name, quantity, unit, received_by, issued_by, transfer_date, remark FROM warehouse_to_production ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_warehouse_to_production(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM warehouse_to_production WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    # ============================================
+    # PRODUCTION - CHECKING
+    # ============================================
+    def add_checking_record(self, check_date, item_name, quantity, unit, checker_name, remark=''):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO checking_records (check_date, item_name, quantity, unit, checker_name, remark) VALUES (?, ?, ?, ?, ?, ?)",
+            (check_date, item_name, quantity, unit, checker_name, remark)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_checking_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, check_date, item_name, quantity, unit, checker_name, remark FROM checking_records ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_checking_record(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM checking_records WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    # ============================================
+    # PRODUCTION - ASSEMBLY
+    # ============================================
+    def add_assembly_record(self, assembly_date, assembler_name, quantity, unit='PCS', remark=''):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO assembly_records (assembly_date, assembler_name, quantity, unit, remark) VALUES (?, ?, ?, ?, ?)",
+            (assembly_date, assembler_name, quantity, unit, remark)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_assembly_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, assembly_date, assembler_name, quantity, unit, remark FROM assembly_records ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_assembly_record(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM assembly_records WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    # ============================================
+    # PRODUCTION - PACKING
+    # ============================================
+    def add_packing_before_seal(self, pack_date, packer_name, lot_number, quantity, unit):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO packing_before_seal (pack_date, packer_name, lot_number, quantity, unit) VALUES (?, ?, ?, ?, ?)",
+            (pack_date, packer_name, lot_number, quantity, unit)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_packing_before_seal(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, pack_date, packer_name, lot_number, quantity, unit FROM packing_before_seal ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_packing_before_seal(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM packing_before_seal WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    # ============================================
+    # PRODUCTION - SEALING
+    # ============================================
+    def add_sealing_record(self, seal_date, sealer_name, lot_number, sealing_qty, packing_qty):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO sealing_records (seal_date, sealer_name, lot_number, sealing_qty, packing_qty) VALUES (?, ?, ?, ?, ?)",
+            (seal_date, sealer_name, lot_number, sealing_qty, packing_qty)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_sealing_records(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, seal_date, sealer_name, lot_number, sealing_qty, packing_qty FROM sealing_records ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_sealing_record(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sealing_records WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    # ============================================
+    # PRODUCTION - STERILIZATION
+    # ============================================
+    def add_sterilization_entry(self, entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark=''):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO sterilization_entry (entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark) VALUES (?, ?, ?, ?, ?, ?)",
+            (entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_sterilization_entries(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, entry_date, person_name, bag_quantity, pcs_quantity, lot_number, remark FROM sterilization_entry ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_sterilization_entry(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sterilization_entry WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
+    
+    def add_sterilization_start(self, start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark=''):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO sterilization_start (start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark) VALUES (?, ?, ?, ?, ?, ?)",
+            (start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_sterilization_starts(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, start_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark FROM sterilization_start ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def add_sterilization_finish(self, finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark=''):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO sterilization_finish (finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark) VALUES (?, ?, ?, ?, ?, ?)",
+            (finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_sterilization_finishes(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, finish_datetime, operator_name, bag_quantity, pcs_quantity, lot_number, remark FROM sterilization_finish ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    # ============================================
+    # PRODUCTION - PACKING AFTER STERILE
+    # ============================================
+    def add_packing_after_sterile(self, pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark=''):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO packing_after_sterile (pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark) VALUES (?, ?, ?, ?, ?, ?)",
+            (pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    
+    def get_packing_after_sterile(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, pack_date, packer_name, lot_number, bag_quantity, pcs_quantity, remark FROM packing_after_sterile ORDER BY timestamp DESC")
+        results = cursor.fetchall()
+        conn.close()
+        return results
+    
+    def delete_packing_after_sterile(self, record_id):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM packing_after_sterile WHERE id = ?", (record_id,))
+        conn.commit()
+        conn.close()
+        return True
     
     # ============================================
     # SALES - CUSTOMERS
@@ -995,7 +1006,7 @@ class Database:
         conn.commit()
         conn.close()
         return f"C{next_num:04d}"
-
+    
     def add_customer(self, customer_code, customer_name, email, phone, address, city, country):
         today = datetime.now().strftime("%Y-%m-%d")
         conn = sqlite3.connect(self.db_name)
@@ -1011,7 +1022,7 @@ class Database:
         except:
             conn.close()
             return False
-
+    
     def get_all_customers(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1019,15 +1030,7 @@ class Database:
         results = cursor.fetchall()
         conn.close()
         return results
-
-    def get_customer_by_code(self, customer_code):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT customer_code, customer_name, email, phone, address, city, country FROM customers WHERE customer_code = ?", (customer_code,))
-        result = cursor.fetchone()
-        conn.close()
-        return result
-
+    
     def delete_customer(self, customer_code):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1035,7 +1038,7 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
+    
     # ============================================
     # SALES - ORDERS
     # ============================================
@@ -1048,7 +1051,7 @@ class Database:
         conn.commit()
         conn.close()
         return f"SO{next_num:05d}"
-
+    
     def add_sales_order(self, order_number, customer_code, order_date, delivery_date, status, notes, created_by):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1059,7 +1062,7 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
+    
     def add_sales_order_item(self, order_number, item_name, quantity, unit_price, total_price):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1070,7 +1073,7 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
+    
     def update_order_total(self, order_number, total_amount):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1081,7 +1084,7 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
+    
     def get_all_orders(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1094,20 +1097,7 @@ class Database:
         results = cursor.fetchall()
         conn.close()
         return results
-
-    def get_order_by_number(self, order_number):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM sales_orders WHERE order_number = ?", (order_number,))
-        order = cursor.fetchone()
-        if order:
-            cursor.execute("SELECT item_name, quantity, unit_price, total_price FROM sales_order_items WHERE order_number = ?", (order_number,))
-            items = cursor.fetchall()
-            conn.close()
-            return order, items
-        conn.close()
-        return None, None
-
+    
     def update_order_status(self, order_number, status):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1118,7 +1108,7 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
+    
     def delete_order(self, order_number):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1127,7 +1117,7 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
+    
     # ============================================
     # SALES - INVOICES
     # ============================================
@@ -1140,7 +1130,7 @@ class Database:
         conn.commit()
         conn.close()
         return f"INV{next_num:05d}"
-
+    
     def add_invoice(self, invoice_number, order_number, customer_code, invoice_date, due_date, total_amount, paid_amount, status, notes):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1151,7 +1141,7 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
+    
     def get_all_invoices(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1164,7 +1154,7 @@ class Database:
         results = cursor.fetchall()
         conn.close()
         return results
-
+    
     def update_invoice_payment(self, invoice_number, paid_amount):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -1175,78 +1165,12 @@ class Database:
         conn.commit()
         conn.close()
         return True
-
-    def get_invoice_by_number(self, invoice_number):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM invoices WHERE invoice_number = ?", (invoice_number,))
-        result = cursor.fetchone()
-        conn.close()
-        return result
-
+    
     # ============================================
-    # DELETE RECORDS
+    # REPORTS
     # ============================================
-    def delete_raw_material_entry(self, record_id):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM raw_material_entry WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def delete_warehouse_to_production(self, record_id):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM warehouse_to_production WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def delete_checking_record(self, record_id):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM checking_records WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def delete_assembly_record(self, record_id):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM assembly_records WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def delete_packing_before_seal(self, record_id):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM packing_before_seal WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def delete_sealing_record(self, record_id):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM sealing_records WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def delete_sterilization_entry(self, record_id):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM sterilization_entry WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        return True
-    
-    def delete_packing_after_sterile(self, record_id):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM packing_after_sterile WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        return True
+    def get_sterilized_goods_report(self):
+        finishes = self.get_sterilization_finishes()
+        total_bags = sum(f[3] for f in finishes) if finishes else 0
+        total_pcs = sum(f[4] for f in finishes) if finishes else 0
+        return {'total_bags': total_bags, 'total_pcs': total_pcs, 'records': finishes}

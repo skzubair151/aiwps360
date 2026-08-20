@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from translations import get_tr
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from business import ProductionManager
 from auth_manager import AuthManager
-from translations import get_tr
 from datetime import datetime
 import sqlite3
 import os
 from werkzeug.utils import secure_filename
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = 'change-this-to-something-random-later'
@@ -33,6 +34,24 @@ def get_currency_symbol():
     if currency == 'KGS':
         return 'сом'
     return '$'
+
+def role_required(allowed_roles):
+    """Decorator to check if user has required role"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                flash('Please login first.', 'error')
+                return redirect('/login')
+            
+            user_id = session.get('user_id')
+            user = manager.db.get_user_by_id(user_id)
+            if not user or user[5] not in allowed_roles:
+                flash('You do not have permission to access this page.', 'error')
+                return redirect('/dashboard')
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 # ============================================
 # LOW STOCK THRESHOLDS
@@ -124,15 +143,20 @@ def set_setting(key, value):
 setup_settings_table()
 
 # ============================================
-# CONTEXT PROCESSOR
+# CONTEXT PROCESSOR - FIXED
 # ============================================
 @app.context_processor
 def inject_settings():
     settings = get_all_settings()
     lang = session.get('lang', settings.get('default_language', 'EN'))
+    
+    # Define the translation function properly
+    def tr(key):
+        return get_tr(key, lang)
+    
     return {
         'app_settings': settings,
-        'tr': get_tr(lang),
+        'tr': tr,  # Pass the function, not the result
         'current_lang': lang,
         'datetime': datetime,
         'is_viewer': is_viewer(),
@@ -811,6 +835,49 @@ def mark_attendance():
     return redirect(url_for('hr'))
 
 # ============================================
+# USER MANAGEMENT ROUTES
+# ============================================
+@app.route('/admin/users')
+def admin_users():
+    if login_required():
+        return redirect(url_for('login'))
+    if is_viewer():
+        flash('❌ Access denied!', 'error')
+        return redirect(url_for('home'))
+    
+    try:
+        users = manager.get_all_users_with_details()
+        if not users:
+            users = []
+    except Exception as e:
+        flash(f'Error loading users: {str(e)}', 'error')
+        users = []
+    
+    return render_template('admin_users.html', active='hr_admin', users=users, is_viewer=is_viewer())
+
+@app.route('/hr/user/get/<int:user_id>')
+def get_user_json(user_id):
+    if login_required():
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    user = manager.get_user_by_id(user_id)
+    if user:
+        return jsonify({
+            'id': user[0],
+            'username': user[1],
+            'full_name': user[2],
+            'role': user[3],
+            'user_type': user[5] if len(user) > 5 else 'Viewer',
+            'email': user[6] if len(user) > 6 else '',
+            'phone': user[7] if len(user) > 7 else '',
+            'department': user[8] if len(user) > 8 else '',
+            'can_manage_users': user[9] if len(user) > 9 else 0,
+            'can_manage_accounts': user[10] if len(user) > 10 else 0,
+            'can_view_reports': user[11] if len(user) > 11 else 0
+        })
+    return jsonify({'error': 'User not found'}), 404
+
+# ============================================
 # SALES ROUTES
 # ============================================
 @app.route('/sales')
@@ -1102,137 +1169,6 @@ def settings_restore():
     restore_file.save('production.db')
     flash('✅ Database restored! Please restart the app.', 'success')
     return redirect(url_for('settings'))
-
-# ============================================
-# EMAIL NOTIFICATIONS
-# ============================================
-try:
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-    
-    class EmailNotifier:
-        def __init__(self, smtp_server='smtp.gmail.com', smtp_port=587, email='', password=''):
-            self.smtp_server = smtp_server
-            self.smtp_port = smtp_port
-            self.email = email
-            self.password = password
-        
-        def send_email(self, to_email, subject, body):
-            try:
-                msg = MIMEMultipart()
-                msg['From'] = self.email
-                msg['To'] = to_email
-                msg['Subject'] = subject
-                msg.attach(MIMEText(body, 'plain'))
-                
-                server = smtplib.SMTP(self.smtp_server, self.smtp_port)
-                server.starttls()
-                server.login(self.email, self.password)
-                server.send_message(msg)
-                server.quit()
-                return True, "Email sent successfully!"
-            except Exception as e:
-                return False, f"Error: {str(e)}"
-        
-        def send_low_stock_alert(self, to_email, item_name, quantity, threshold):
-            subject = f"⚠️ Low Stock Alert: {item_name}"
-            body = f"""
-        LOW STOCK ALERT
-        
-        Item: {item_name}
-        Current Quantity: {quantity} PCS
-        Threshold: {threshold} PCS
-        
-        Please reorder this item immediately.
-        
-        Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-        -- AIWPS360 ERP System
-        """
-            return self.send_email(to_email, subject, body)
-        
-        def send_daily_summary(self, to_email, summary_data):
-            subject = f"Daily Production Summary - {datetime.now().strftime('%Y-%m-%d')}"
-            body = f"""
-        DAILY PRODUCTION SUMMARY
-        
-        Date: {datetime.now().strftime('%Y-%m-%d')}
-        
-        Today's Assembly: {summary_data.get('today_assembly', 0)} PCS
-        Total Stock Items: {summary_data.get('total_stock_items', 0)}
-        Total Employees: {summary_data.get('total_employees', 0)}
-        
-        -- AIWPS360 ERP System
-        """
-            return self.send_email(to_email, subject, body)
-    
-    @app.route('/settings/email', methods=['POST'])
-    def save_email_settings():
-        if login_required():
-            return redirect(url_for('login'))
-        if is_viewer():
-            flash('❌ Viewers cannot change email settings!', 'error')
-            return redirect(url_for('settings'))
-        
-        email = request.form.get('email', '')
-        password = request.form.get('password', '')
-        alert_email = request.form.get('alert_email', '')
-        
-        set_setting('email_address', email)
-        set_setting('email_password', password)
-        set_setting('email_alert_to', alert_email)
-        
-        flash('✅ Email settings saved!', 'success')
-        return redirect(url_for('settings'))
-    
-    @app.route('/check_low_stock')
-    def check_low_stock():
-        if login_required():
-            return redirect(url_for('login'))
-        
-        settings = get_all_settings()
-        email = settings.get('email_address', '')
-        password = settings.get('email_password', '')
-        alert_email = settings.get('email_alert_to', '')
-        
-        if not email or not alert_email:
-            flash('❌ Please configure email settings first!', 'error')
-            return redirect(url_for('settings'))
-        
-        conn = sqlite3.connect('production.db')
-        cursor = conn.cursor()
-        
-        thresholds = get_thresholds()
-        cursor.execute("SELECT item_name, quantity FROM warehouse_stock")
-        stock = cursor.fetchall()
-        conn.close()
-        
-        notifier = EmailNotifier(email=email, password=password)
-        alerts_sent = 0
-        alert_items = []
-        
-        for item_name, quantity in stock:
-            threshold = thresholds.get(item_name, 10)
-            if quantity <= threshold:
-                alert_items.append(f"{item_name}: {quantity} PCS (Threshold: {threshold})")
-                success, message = notifier.send_low_stock_alert(
-                    alert_email, 
-                    item_name, 
-                    quantity, 
-                    threshold
-                )
-                if success:
-                    alerts_sent += 1
-        
-        if alert_items:
-            flash(f'✅ {alerts_sent} low stock alerts sent!\n\nItems: {", ".join(alert_items)}', 'success')
-        else:
-            flash('✅ No low stock items found. All stocks are above threshold.', 'success')
-        
-        return redirect(url_for('reports'))
-    
-except ImportError:
-    print("⚠️ Email module not fully configured.")
 
 # ============================================
 # MAIN

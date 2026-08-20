@@ -29,9 +29,6 @@
             --sidebar-active: #4f46e5;
         }
 
-        /* ============================================ */
-        /* BACKGROUND IMAGE SUPPORT                     */
-        /* ============================================ */
         {% if app_settings.background_image %}
         .bg-layer {
             position: fixed;
@@ -45,9 +42,6 @@
         }
         {% endif %}
 
-        /* ============================================ */
-        /* FIT TO WINDOW                               */
-        /* ============================================ */
         {% if app_settings.fit_to_window == 'on' %}
         html, body { height: 100vh; overflow: hidden; }
         .main-content { height: 100vh; overflow-y: auto; }
@@ -392,92 +386,6 @@
             background: #2d3748;
         }
 
-        body.dark-mode .stat-card {
-            background: #1e293b;
-        }
-
-        body.dark-mode .stat-info h3 {
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .stat-info p {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .alert-info {
-            background: #1e3a5f;
-            color: #93c5fd;
-            border-color: #2563eb;
-        }
-
-        body.dark-mode .alert-warning {
-            background: #4b3d1a;
-            color: #fcd34d;
-            border-color: #b45309;
-        }
-
-        body.dark-mode .alert-danger {
-            background: #4b1a1a;
-            color: #fca5a5;
-            border-color: #b91c1c;
-        }
-
-        body.dark-mode .alert-success {
-            background: #1a4b1a;
-            color: #86efac;
-            border-color: #15803d;
-        }
-
-        body.dark-mode .form-control {
-            background: #1e293b;
-            color: #e2e8f0;
-            border-color: #2d3748;
-        }
-
-        body.dark-mode .form-control:focus {
-            background: #1e293b;
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .form-select {
-            background: #1e293b;
-            color: #e2e8f0;
-            border-color: #2d3748;
-        }
-
-        body.dark-mode .form-select option {
-            background: #1e293b;
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .quick-stat-item {
-            background: #2d3748;
-        }
-
-        body.dark-mode .quick-stat-item:hover {
-            background: #374151;
-        }
-
-        body.dark-mode .quick-stat-label {
-            color: #94a3b8;
-        }
-
-        body.dark-mode .quick-stat-value {
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .badge {
-            color: #e2e8f0;
-        }
-
-        body.dark-mode .text-muted {
-            color: #94a3b8 !important;
-        }
-
-        body.dark-mode .alert {
-            border-color: #2d3748;
-        }
-
         /* ============================================ */
         /* RESPONSIVE                                  */
         /* ============================================ */
@@ -579,27 +487,34 @@
                 </div>
             </div>
 
+            <!-- ============================================ -->
+            <!-- MAIN SIDEBAR NAVIGATION - UPDATED ORDER     -->
+            <!-- ============================================ -->
             <nav class="main-sidebar-nav">
                 <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">
-                    <i class="fas fa-chart-pie"></i> <span>{{ tr('nav_dashboard') }}</span>
+                    <i class="fas fa-chart-pie"></i> <span>Dashboard</span>
                 </a>
                 <a href="/warehouse" class="{% if active == 'warehouse' %}active{% endif %}">
-                    <i class="fas fa-warehouse"></i> <span>{{ tr('nav_warehouse') }}</span>
+                    <i class="fas fa-warehouse"></i> <span>Warehouse</span>
                 </a>
                 <a href="/production" class="{% if active == 'production' %}active{% endif %}">
-                    <i class="fas fa-industry"></i> <span>{{ tr('nav_production') }}</span>
+                    <i class="fas fa-industry"></i> <span>Production</span>
                 </a>
                 <a href="/hr" class="{% if active == 'hr' %}active{% endif %}">
-                    <i class="fas fa-users"></i> <span>{{ tr('nav_hr') }}</span>
+                    <i class="fas fa-users-cog"></i> <span>HR & Admin</span>
                 </a>
                 <a href="/sales" class="{% if active == 'sales' %}active{% endif %}">
-                    <i class="fas fa-cart-shopping"></i> <span>{{ tr('nav_sales') }}</span>
+                    <i class="fas fa-cart-shopping"></i> <span>Sales</span>
                 </a>
                 <a href="/reports" class="{% if active == 'reports' %}active{% endif %}">
-                    <i class="fas fa-file-chart-line"></i> <span>{{ tr('nav_reports') }}</span>
+                    <i class="fas fa-file-chart-line"></i> <span>Reports</span>
+                </a>
+                <!-- User Management moved AFTER Reports -->
+                <a href="/admin/users" class="{% if active == 'hr_admin' %}active{% endif %}">
+                    <i class="fas fa-user-cog"></i> <span>User Management</span>
                 </a>
                 <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">
-                    <i class="fas fa-gear"></i> <span>{{ tr('nav_settings') }}</span>
+                    <i class="fas fa-gear"></i> <span>Settings</span>
                 </a>
             </nav>
 
@@ -615,11 +530,11 @@
                 </div>
                 <form method="post" action="/set_language" style="margin-bottom:6px;">
                     <button type="submit" style="background:transparent; color:var(--sidebar-text); border:1px solid var(--sidebar-text); padding:4px 12px; font-size:11px; width:auto; margin:0; cursor:pointer; border-radius:4px;">
-                        <i class="fas fa-globe me-1"></i> {{ tr('lang_toggle') }}
+                        <i class="fas fa-globe me-1"></i> 🌐 RU
                     </button>
                 </form>
                 <a href="/logout" class="main-sidebar-logout">
-                    <i class="fas fa-sign-out-alt"></i> {{ tr('nav_logout') }}
+                    <i class="fas fa-sign-out-alt"></i> Logout
                 </a>
             </div>
 
@@ -639,7 +554,6 @@
                     </button>
                 </div>
                 <div class="d-flex align-items-center gap-3">
-                    <!-- Dark Mode Toggle -->
                     <button onclick="toggleDarkMode()" class="btn btn-sm btn-outline-secondary" id="darkModeToggle" title="Toggle Dark Mode">
                         <i class="fas fa-moon"></i>
                     </button>
@@ -688,7 +602,6 @@
         }
     });
 
-    // Dark Mode
     function toggleDarkMode() {
         const body = document.body;
         const toggle = document.getElementById('darkModeToggle');

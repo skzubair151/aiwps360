@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row">
+    <div class="col-12">
+        <!-- User Management Panel - No HR Tabs -->
+        <div class="card card-modern">
+            <div class="card-header-modern d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-users-cog text-primary me-2"></i> User Management</h5>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fas fa-plus me-1"></i> Add User
+                </button>
+            </div>
+            <div class="card-body-modern p-0">
+                <div class="table-responsive">
+                    <table class="table table-modern">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if users and users|length > 0 %}
+                                {% for u in users %}
+                                <tr>
+                                    <td><strong>{{ u[1] if u|length > 1 else 'N/A' }}</strong></td>
+                                    <td>{{ u[2] if u|length > 2 else 'N/A' }}</td>
+                                    <td>{{ u[6] if u|length > 6 else '-' }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if u[3] == 'Admin' %}bg-danger
+                                            {% elif u[3] == 'Manager' %}bg-warning
+                                            {% else %}bg-info{% endif %}">
+                                            {{ u[3] if u|length > 3 else 'Staff' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if u[5] == 'Admin' %}
+                                            <span class="badge bg-danger">Admin</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Viewer</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if u[4] == 'Active' %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <!-- Edit Button -->
+                                            <button class="btn btn-primary" onclick="editUser('{{ u[0] }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <!-- Toggle Status Button -->
+                                            {% if u[1] != 'admin' %}
+                                            <form method="post" action="/admin/toggle_user/{{ u[0] }}" style="display:inline;">
+                                                <button type="submit" class="btn btn-{{ 'success' if u[4] == 'Active' else 'secondary' }}">
+                                                    <i class="fas fa-{{ 'toggle-on' if u[4] == 'Active' else 'toggle-off' }}"></i>
+                                                </button>
+                                            </form>
+                                            <!-- Delete Button -->
+                                            <form method="post" action="/admin/delete_user/{{ u[0] }}" style="display:inline;" onsubmit="return confirm('Delete this user?')">
+                                                <button type="submit" class="btn btn-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">
+                                        <i class="fas fa-users fa-2x d-block mb-2"></i>
+                                        No users found. Click "Add User" to create one.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- ADD USER MODAL                              -->
+<!-- ============================================ -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i> Add User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="/admin/add_user">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Username *</label>
+                                <input type="text" name="username" class="form-control" required placeholder="Enter username">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Password *</label>
+                                <input type="password" name="password" class="form-control" required placeholder="Enter password">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" name="full_name" class="form-control" required placeholder="Enter full name">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" placeholder="Enter email">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" name="phone" class="form-control" placeholder="Enter phone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Department</label>
+                                <input type="text" name="department" class="form-control" placeholder="Enter department">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Role</label>
+                                <select name="role" class="form-select">
+                                    <option value="Admin">Admin</option>
+                                    <option value="Manager">Manager</option>
+                                    <option value="Staff" selected>Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">User Type</label>
+                                <select name="user_type" class="form-select">
+                                    <option value="Admin">Admin</option>
+                                    <option value="Viewer" selected>Viewer</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="can_manage_users" class="form-check-input" value="1">
+                                <label class="form-check-label">Manage Users</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="can_manage_accounts" class="form-check-input" value="1">
+                                <label class="form-check-label">Manage Accounts</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="can_view_reports" class="form-check-input" value="1" checked>
+                                <label class="form-check-label">View Reports</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- EDIT USER MODAL                             -->
+<!-- ============================================ -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i> Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" name="user_id" id="edit_user_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" id="edit_username" class="form-control" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Full Name *</label>
+                                <input type="text" name="full_name" id="edit_full_name" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" id="edit_email" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" name="phone" id="edit_phone" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Department</label>
+                                <input type="text" name="department" id="edit_department" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Role</label>
+                                <select name="role" id="edit_role" class="form-select">
+                                    <option value="Admin">Admin</option>
+                                    <option value="Manager">Manager</option>
+                                    <option value="Staff">Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">User Type</label>
+                                <select name="user_type" id="edit_user_type" class="form-select">
+                                    <option value="Admin">Admin</option>
+                                    <option value="Viewer">Viewer</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="can_manage_users" id="edit_can_manage_users" class="form-check-input" value="1">
+                                <label class="form-check-label">Manage Users</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="can_manage_accounts" id="edit_can_manage_accounts" class="form-check-input" value="1">
+                                <label class="form-check-label">Manage Accounts</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="can_view_reports" id="edit_can_view_reports" class="form-check-input" value="1">
+                                <label class="form-check-label">View Reports</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.card-modern {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.card-header-modern {
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header-modern h5 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.card-body-modern {
+    padding: 20px;
+}
+
+.table-modern {
+    margin: 0;
+    font-size: 14px;
+}
+
+.table-modern thead th {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.table-modern tbody td {
+    padding: 10px 16px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.table-modern tbody tr:hover {
+    background: #f8fafc;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 4px 10px;
+}
+
+.btn-group-sm .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 16px 20px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    border-top: 1px solid #e2e8f0;
+    padding: 16px 20px;
+}
+
+.form-label {
+    font-weight: 500;
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 4px;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-check-input:checked {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+}
+
+.btn-primary {
+    background: #4f46e5;
+    border: none;
+}
+
+.btn-primary:hover {
+    background: #4338ca;
+}
+</style>
+
+<script>
+function editUser(userId) {
+    fetch('/hr/user/get/' + userId)
+        .then(response => response.json())
+        .then(user => {
+            document.getElementById('edit_user_id').value = user.id;
+            document.getElementById('edit_username').value = user.username;
+            document.getElementById('edit_full_name').value = user.full_name || '';
+            document.getElementById('edit_email').value = user.email || '';
+            document.getElementById('edit_phone').value = user.phone || '';
+            document.getElementById('edit_department').value = user.department || '';
+            document.getElementById('edit_role').value = user.role || 'Staff';
+            document.getElementById('edit_user_type').value = user.user_type || 'Viewer';
+            document.getElementById('edit_can_manage_users').checked = user.can_manage_users == 1;
+            document.getElementById('edit_can_manage_accounts').checked = user.can_manage_accounts == 1;
+            document.getElementById('edit_can_view_reports').checked = user.can_view_reports == 1;
+            document.getElementById('editUserForm').action = '/admin/edit_user/' + userId;
+            
+            var modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            modal.show();
+        })
+        .catch(error => {
+            alert('Error loading user data: ' + error);
+        });
+}
+</script>
+
+{% endblock %}
