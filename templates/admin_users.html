@@ -3,12 +3,12 @@
 
 <div class="row">
     <div class="col-12">
-        <!-- User Management Panel - No HR Tabs -->
+        <!-- User Management Panel -->
         <div class="card card-modern">
             <div class="card-header-modern d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-users-cog text-primary me-2"></i> User Management</h5>
+                <h5><i class="fas fa-users-cog text-primary me-2"></i> {{ tr('user_management') }}</h5>
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                    <i class="fas fa-plus me-1"></i> Add User
+                    <i class="fas fa-plus me-1"></i> {{ tr('add_user') }}
                 </button>
             </div>
             <div class="card-body-modern p-0">
@@ -16,13 +16,13 @@
                     <table class="table table-modern">
                         <thead>
                             <tr>
-                                <th>Username</th>
-                                <th>Full Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th>{{ tr('username') }}</th>
+                                <th>{{ tr('full_name') }}</th>
+                                <th>{{ tr('email') }}</th>
+                                <th>{{ tr('role') }}</th>
+                                <th>{{ tr('admin_user_type') }}</th>
+                                <th>{{ tr('status') }}</th>
+                                <th>{{ tr('actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -42,34 +42,34 @@
                                     </td>
                                     <td>
                                         {% if u[5] == 'Admin' %}
-                                            <span class="badge bg-danger">Admin</span>
+                                            <span class="badge bg-danger">{{ tr('admin_user_type') }}</span>
                                         {% else %}
-                                            <span class="badge bg-secondary">Viewer</span>
+                                            <span class="badge bg-secondary">{{ tr('viewer') }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if u[4] == 'Active' %}
-                                            <span class="badge bg-success">Active</span>
+                                            <span class="badge bg-success">{{ tr('active') }}</span>
                                         {% else %}
-                                            <span class="badge bg-danger">Inactive</span>
+                                            <span class="badge bg-danger">{{ tr('inactive') }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
                                             <!-- Edit Button -->
-                                            <button class="btn btn-primary" onclick="editUser('{{ u[0] }}')">
+                                            <button class="btn btn-primary" onclick="editUser('{{ u[0] }}')" title="{{ tr('edit_user') }}">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <!-- Toggle Status Button -->
                                             {% if u[1] != 'admin' %}
                                             <form method="post" action="/admin/toggle_user/{{ u[0] }}" style="display:inline;">
-                                                <button type="submit" class="btn btn-{{ 'success' if u[4] == 'Active' else 'secondary' }}">
+                                                <button type="submit" class="btn btn-{{ 'success' if u[4] == 'Active' else 'secondary' }}" title="{{ tr('toggle_status') }}">
                                                     <i class="fas fa-{{ 'toggle-on' if u[4] == 'Active' else 'toggle-off' }}"></i>
                                                 </button>
                                             </form>
                                             <!-- Delete Button -->
-                                            <form method="post" action="/admin/delete_user/{{ u[0] }}" style="display:inline;" onsubmit="return confirm('Delete this user?')">
-                                                <button type="submit" class="btn btn-danger">
+                                            <form method="post" action="/admin/delete_user/{{ u[0] }}" style="display:inline;" onsubmit="return confirm('{{ tr('confirm_delete_user') }}')">
+                                                <button type="submit" class="btn btn-danger" title="{{ tr('delete_user') }}">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -82,7 +82,7 @@
                                 <tr>
                                     <td colspan="7" class="text-center py-4 text-muted">
                                         <i class="fas fa-users fa-2x d-block mb-2"></i>
-                                        No users found. Click "Add User" to create one.
+                                        {{ tr('no_users_found') }}
                                     </td>
                                 </tr>
                             {% endif %}
@@ -101,7 +101,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i> Add User</h5>
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i> {{ tr('add_user') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="/admin/add_user">
@@ -109,62 +109,62 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Username *</label>
-                                <input type="text" name="username" class="form-control" required placeholder="Enter username">
+                                <label class="form-label">{{ tr('username') }} *</label>
+                                <input type="text" name="username" class="form-control" required placeholder="{{ tr('username') }}">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Password *</label>
-                                <input type="password" name="password" class="form-control" required placeholder="Enter password">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Full Name *</label>
-                                <input type="text" name="full_name" class="form-control" required placeholder="Enter full name">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" name="email" class="form-control" placeholder="Enter email">
+                                <label class="form-label">{{ tr('password') }} *</label>
+                                <input type="password" name="password" class="form-control" required placeholder="{{ tr('password') }}">
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Phone</label>
-                                <input type="text" name="phone" class="form-control" placeholder="Enter phone">
+                                <label class="form-label">{{ tr('full_name') }} *</label>
+                                <input type="text" name="full_name" class="form-control" required placeholder="{{ tr('full_name') }}">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Department</label>
-                                <input type="text" name="department" class="form-control" placeholder="Enter department">
+                                <label class="form-label">{{ tr('email') }}</label>
+                                <input type="email" name="email" class="form-control" placeholder="{{ tr('email') }}">
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Role</label>
+                                <label class="form-label">{{ tr('phone') }}</label>
+                                <input type="text" name="phone" class="form-control" placeholder="{{ tr('phone') }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">{{ tr('department') }}</label>
+                                <input type="text" name="department" class="form-control" placeholder="{{ tr('department') }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">{{ tr('role') }}</label>
                                 <select name="role" class="form-select">
-                                    <option value="Admin">Admin</option>
-                                    <option value="Manager">Manager</option>
-                                    <option value="Staff" selected>Staff</option>
+                                    <option value="Admin">{{ tr('admin') }}</option>
+                                    <option value="Manager">{{ tr('manager') }}</option>
+                                    <option value="Staff" selected>{{ tr('staff') }}</option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">User Type</label>
+                                <label class="form-label">{{ tr('admin_user_type') }}</label>
                                 <select name="user_type" class="form-select">
-                                    <option value="Admin">Admin</option>
-                                    <option value="Viewer" selected>Viewer</option>
+                                    <option value="Admin">{{ tr('admin') }}</option>
+                                    <option value="Viewer" selected>{{ tr('viewer') }}</option>
                                 </select>
                             </div>
                         </div>
@@ -173,26 +173,26 @@
                         <div class="col-md-4">
                             <div class="form-check">
                                 <input type="checkbox" name="can_manage_users" class="form-check-input" value="1">
-                                <label class="form-check-label">Manage Users</label>
+                                <label class="form-check-label">{{ tr('admin_manage_users') }}</label>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-check">
                                 <input type="checkbox" name="can_manage_accounts" class="form-check-input" value="1">
-                                <label class="form-check-label">Manage Accounts</label>
+                                <label class="form-check-label">{{ tr('admin_manage_accounts') }}</label>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-check">
                                 <input type="checkbox" name="can_view_reports" class="form-check-input" value="1" checked>
-                                <label class="form-check-label">View Reports</label>
+                                <label class="form-check-label">{{ tr('admin_view_reports') }}</label>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add User</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ tr('cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ tr('add_user') }}</button>
                 </div>
             </form>
         </div>
@@ -206,7 +206,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i> Edit User</h5>
+                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i> {{ tr('edit_user') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" id="editUserForm">
@@ -215,13 +215,13 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Username</label>
+                                <label class="form-label">{{ tr('username') }}</label>
                                 <input type="text" id="edit_username" class="form-control" disabled>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Full Name *</label>
+                                <label class="form-label">{{ tr('full_name') }} *</label>
                                 <input type="text" name="full_name" id="edit_full_name" class="form-control" required>
                             </div>
                         </div>
@@ -229,13 +229,13 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Email</label>
+                                <label class="form-label">{{ tr('email') }}</label>
                                 <input type="email" name="email" id="edit_email" class="form-control">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Phone</label>
+                                <label class="form-label">{{ tr('phone') }}</label>
                                 <input type="text" name="phone" id="edit_phone" class="form-control">
                             </div>
                         </div>
@@ -243,17 +243,17 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Department</label>
+                                <label class="form-label">{{ tr('department') }}</label>
                                 <input type="text" name="department" id="edit_department" class="form-control">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Role</label>
+                                <label class="form-label">{{ tr('role') }}</label>
                                 <select name="role" id="edit_role" class="form-select">
-                                    <option value="Admin">Admin</option>
-                                    <option value="Manager">Manager</option>
-                                    <option value="Staff">Staff</option>
+                                    <option value="Admin">{{ tr('admin') }}</option>
+                                    <option value="Manager">{{ tr('manager') }}</option>
+                                    <option value="Staff">{{ tr('staff') }}</option>
                                 </select>
                             </div>
                         </div>
@@ -261,10 +261,10 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">User Type</label>
+                                <label class="form-label">{{ tr('admin_user_type') }}</label>
                                 <select name="user_type" id="edit_user_type" class="form-select">
-                                    <option value="Admin">Admin</option>
-                                    <option value="Viewer">Viewer</option>
+                                    <option value="Admin">{{ tr('admin') }}</option>
+                                    <option value="Viewer">{{ tr('viewer') }}</option>
                                 </select>
                             </div>
                         </div>
@@ -273,26 +273,26 @@
                         <div class="col-md-4">
                             <div class="form-check">
                                 <input type="checkbox" name="can_manage_users" id="edit_can_manage_users" class="form-check-input" value="1">
-                                <label class="form-check-label">Manage Users</label>
+                                <label class="form-check-label">{{ tr('admin_manage_users') }}</label>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-check">
                                 <input type="checkbox" name="can_manage_accounts" id="edit_can_manage_accounts" class="form-check-input" value="1">
-                                <label class="form-check-label">Manage Accounts</label>
+                                <label class="form-check-label">{{ tr('admin_manage_accounts') }}</label>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-check">
                                 <input type="checkbox" name="can_view_reports" id="edit_can_view_reports" class="form-check-input" value="1">
-                                <label class="form-check-label">View Reports</label>
+                                <label class="form-check-label">{{ tr('admin_view_reports') }}</label>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update User</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ tr('cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ tr('save_user') }}</button>
                 </div>
             </form>
         </div>
@@ -437,7 +437,7 @@ function editUser(userId) {
             modal.show();
         })
         .catch(error => {
-            alert('Error loading user data: ' + error);
+            alert('{{ tr('error_loading_user') }}');
         });
 }
 </script>
