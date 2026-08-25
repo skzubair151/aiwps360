@@ -12,6 +12,20 @@ EN = {
     'nav_settings': 'Settings',
     'nav_logout': 'Logout',
 
+    Sidebar and User Info
+    'nav_dashboard': 'Dashboard',
+    'nav_warehouse': 'Warehouse',
+    'nav_production': 'Production',
+    'nav_hr_admin': 'HR & Admin',
+    'nav_sales': 'Sales',
+    'nav_reports': 'Reports',
+    'nav_settings': 'Settings',
+    'nav_logout': 'Logout',
+    'user_management': 'User Management',
+    'admin': 'Admin',
+    'viewer': 'Viewer',
+    'lang_toggle': '🌐 RU',
+
     # Language toggle
     'lang_toggle': '🌐 RU',
 
@@ -356,6 +370,20 @@ RU = {
 
     # Language toggle
     'lang_toggle': 'EN',
+
+     Sidebar and User Info
+    'nav_dashboard': 'Панель',
+    'nav_warehouse': 'Склад',
+    'nav_production': 'Производство',
+    'nav_hr_admin': 'Кадры и Администрирование',
+    'nav_sales': 'Продажи',
+    'nav_reports': 'Отчёты',
+    'nav_settings': 'Настройки',
+    'nav_logout': 'Выход',
+    'user_management': 'Управление пользователями',
+    'admin': 'Администратор',
+    'viewer': 'Просмотр',
+    'lang_toggle': '🌐 EN',
 
     # Common
     'date': 'Дата',

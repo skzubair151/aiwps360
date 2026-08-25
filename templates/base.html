@@ -488,53 +488,55 @@
             </div>
 
             <!-- ============================================ -->
-            <!-- MAIN SIDEBAR NAVIGATION - UPDATED ORDER     -->
+            <!-- MAIN SIDEBAR NAVIGATION - FULLY TRANSLATED  -->
             <!-- ============================================ -->
             <nav class="main-sidebar-nav">
                 <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">
-                    <i class="fas fa-chart-pie"></i> <span>Dashboard</span>
+                    <i class="fas fa-chart-pie"></i> <span>{{ tr('nav_dashboard') }}</span>
                 </a>
                 <a href="/warehouse" class="{% if active == 'warehouse' %}active{% endif %}">
-                    <i class="fas fa-warehouse"></i> <span>Warehouse</span>
+                    <i class="fas fa-warehouse"></i> <span>{{ tr('nav_warehouse') }}</span>
                 </a>
                 <a href="/production" class="{% if active == 'production' %}active{% endif %}">
-                    <i class="fas fa-industry"></i> <span>Production</span>
+                    <i class="fas fa-industry"></i> <span>{{ tr('nav_production') }}</span>
                 </a>
                 <a href="/hr" class="{% if active == 'hr' %}active{% endif %}">
-                    <i class="fas fa-users-cog"></i> <span>HR & Admin</span>
+                    <i class="fas fa-users-cog"></i> <span>{{ tr('nav_hr_admin') }}</span>
                 </a>
                 <a href="/sales" class="{% if active == 'sales' %}active{% endif %}">
-                    <i class="fas fa-cart-shopping"></i> <span>Sales</span>
+                    <i class="fas fa-cart-shopping"></i> <span>{{ tr('nav_sales') }}</span>
                 </a>
                 <a href="/reports" class="{% if active == 'reports' %}active{% endif %}">
-                    <i class="fas fa-file-chart-line"></i> <span>Reports</span>
+                    <i class="fas fa-file-chart-line"></i> <span>{{ tr('nav_reports') }}</span>
                 </a>
-                <!-- User Management moved AFTER Reports -->
                 <a href="/admin/users" class="{% if active == 'hr_admin' %}active{% endif %}">
-                    <i class="fas fa-user-cog"></i> <span>User Management</span>
+                    <i class="fas fa-user-cog"></i> <span>{{ tr('user_management') }}</span>
                 </a>
                 <a href="/settings" class="{% if active == 'settings' %}active{% endif %}">
-                    <i class="fas fa-gear"></i> <span>Settings</span>
+                    <i class="fas fa-gear"></i> <span>{{ tr('nav_settings') }}</span>
                 </a>
             </nav>
 
+            <!-- ============================================ -->
+            <!-- USER INFO - FULLY TRANSLATED                -->
+            <!-- ============================================ -->
             <div class="main-sidebar-user">
                 <div class="main-sidebar-username">{{ session['user']['full_name'] }}</div>
                 <div class="main-sidebar-user-type">
                     <i class="fas fa-user-shield me-1"></i>
                     {% if session['user']['user_type'] == 'Admin' %}
-                        🛠️ Admin
+                        🛠️ {{ tr('admin') }}
                     {% else %}
-                        👁️ Viewer
+                        👁️ {{ tr('viewer') }}
                     {% endif %}
                 </div>
                 <form method="post" action="/set_language" style="margin-bottom:6px;">
                     <button type="submit" style="background:transparent; color:var(--sidebar-text); border:1px solid var(--sidebar-text); padding:4px 12px; font-size:11px; width:auto; margin:0; cursor:pointer; border-radius:4px;">
-                        <i class="fas fa-globe me-1"></i> 🌐 RU
+                        <i class="fas fa-globe me-1"></i> {{ tr('lang_toggle') }}
                     </button>
                 </form>
                 <a href="/logout" class="main-sidebar-logout">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+                    <i class="fas fa-sign-out-alt"></i> {{ tr('nav_logout') }}
                 </a>
             </div>
 
