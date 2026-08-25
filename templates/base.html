@@ -629,3 +629,115 @@
 
 </body>
 </html>
+<style>
+    /* Theme variables */
+    :root {
+        --sidebar-width: 240px;
+        --sidebar-bg: #0f172a;
+        --sidebar-text: #94a3b8;
+        --sidebar-hover: #1e293b;
+        --sidebar-active: #4f46e5;
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --card-bg: #ffffff;
+        --body-bg: #f1f5f9;
+        --text-color: #0f172a;
+        --border-color: #e2e8f0;
+    }
+
+    /* Industrial Theme (Default) */
+    {% if app_settings.theme == 'industrial' %}
+    :root {
+        --sidebar-bg: #0f172a;
+        --sidebar-active: #f59e0b;
+        --primary-color: #f59e0b;
+        --primary-hover: #d97706;
+    }
+    .main-sidebar-nav a.active {
+        background: var(--sidebar-active);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    {% endif %}
+
+    /* Ocean Theme */
+    {% if app_settings.theme == 'ocean' %}
+    :root {
+        --sidebar-bg: #0c2340;
+        --sidebar-active: #06b6d4;
+        --primary-color: #06b6d4;
+        --primary-hover: #0891b2;
+    }
+    .main-sidebar-nav a.active {
+        background: var(--sidebar-active);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+    }
+    {% endif %}
+
+    /* Forest Theme */
+    {% if app_settings.theme == 'forest' %}
+    :root {
+        --sidebar-bg: #0a1f0a;
+        --sidebar-active: #22c55e;
+        --primary-color: #22c55e;
+        --primary-hover: #16a34a;
+    }
+    .main-sidebar-nav a.active {
+        background: var(--sidebar-active);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+    {% endif %}
+
+    /* Minimal Light Theme */
+    {% if app_settings.theme == 'minimal_light' %}
+    :root {
+        --sidebar-bg: #ffffff;
+        --sidebar-text: #475569;
+        --sidebar-hover: #f1f5f9;
+        --sidebar-active: #3b82f6;
+        --primary-color: #3b82f6;
+        --primary-hover: #2563eb;
+    }
+    .main-sidebar {
+        border-right: 1px solid #e2e8f0;
+    }
+    .main-sidebar-title {
+        color: #0f172a;
+    }
+    .main-sidebar-nav a {
+        color: #475569;
+    }
+    .main-sidebar-nav a:hover {
+        background: var(--sidebar-hover);
+        color: #0f172a;
+    }
+    .main-sidebar-nav a.active {
+        background: var(--sidebar-active);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .main-sidebar-user {
+        border-top-color: #e2e8f0;
+        background: var(--sidebar-bg);
+    }
+    .main-sidebar-username {
+        color: #0f172a;
+    }
+    .main-sidebar-footer {
+        color: #94a3b8;
+        border-top-color: #e2e8f0;
+    }
+    .main-sidebar-logout {
+        color: #475569;
+    }
+    .main-sidebar-logout:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+    .main-sidebar-sub {
+        color: #94a3b8;
+    }
+    {% endif %}
+</style>

@@ -1170,6 +1170,24 @@ def settings_restore():
     flash('✅ Database restored! Please restart the app.', 'success')
     return redirect(url_for('settings'))
 
+@app.context_processor
+def inject_settings():
+    settings = get_all_settings()
+    lang = session.get('lang', settings.get('default_language', 'EN'))
+    
+    # Define the translation function
+    def tr(key):
+        return get_tr(key, lang)
+    
+    return {
+        'app_settings': settings,
+        'tr': tr,
+        'current_lang': lang,
+        'datetime': datetime,
+        'is_viewer': is_viewer(),
+        'currency_symbol': get_currency_symbol()
+    }
+
 # ============================================
 # MAIN
 # ============================================
